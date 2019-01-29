@@ -32,20 +32,25 @@ const sysrpcpw = argv.sysrpcpw;
 /* Initialize Geth Web3 */
 let web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
 var collection = [];
+var highestBlock = 0;
+var currentBlock = 0; 
 
 /* Geth subscriber for new block headers */
-const subscription_header = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
+const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
     if (error) return console.error(error);
+	if (blockHeader['number'] > currentBlock) {
+		currentBlock = blockHeader['number'];
+	}
     let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
     collection.push(obj);
 });
 
 /* Timer for submitting header lists to Syscoin via RPC */
-const timer = setInterval(pushToRPC, 50000);
+const timer = setInterval(pushToRPC, 5000);
 function pushToRPC() {
 	// Check if there's anything in the collection
 	if (collection.length == 0) {
-			console.log("collection is empty");
+			// console.log("collection is empty");
 			return;
 	}
 	
@@ -75,7 +80,7 @@ function pushToRPC() {
 };
 
 // unsubscribes the header subscription
-subscription_header.unsubscribe((error, success) => {
+subscriptionHeader.unsubscribe((error, success) => {
     if (error) return console.error(error);
 
     console.log('Successfully unsubscribed!');
@@ -83,7 +88,7 @@ subscription_header.unsubscribe((error, success) => {
 });
 
 /*  Subscription for Geth syncing status */
-const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
+const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
     if (error) return console.error(error);
 
 	var params = [];
@@ -91,10 +96,18 @@ const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
 		if (sync) {
 			params = ["syncing", 0];
 	    } else  {
-	     	params = ["synced", 0];
+			// Syncing === false doesn't meant that it's done syncing.
+		    // It simply means it's not syncing
+		    if (currentBlock < highestBlock || highestBlock == 0) {
+				// highestBlock == 0 should really mean it's waiting to connect to peer
+			    params = ["syncing", highestBlock];
+			} else {
+	     	    params = ["synced", highestBlock];
+			}
 		}
 	} else {
-		params = ["syncing", sync.status.HighestBlock];
+		highestBlock = sync.status.HighestBlock;
+		params = ["syncing", highestBlock];
 	}
 
 	let options = {
@@ -110,7 +123,7 @@ const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
         },
         body: JSON.stringify( {
 				"jsonrpc": "1.0", 
-				"id": "sync_update", 
+				"id": "eth_sync_update", 
 				"method": "syscoinsetethstatus",
 				"params": params})
     };
@@ -127,7 +140,7 @@ const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
 });
 
 // unsubscribes the subscription
-subscription_sync.unsubscribe(function(error, success){
+subscriptionSync.unsubscribe(function(error, success){
     if(success)
         console.log('Successfully unsubscribed!');
 });
