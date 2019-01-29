@@ -2,14 +2,13 @@
   "name": "websocket",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "relayer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Blockchain Foundry Inc.",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.18.0",
     "pkg": "^4.3.1",
     "web3": "^1.0.0-beta.37",
     "yargs": "^12.0.5"

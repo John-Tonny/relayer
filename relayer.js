@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const axios = require('axios');
 const Web3 = require('web3');
 const request = require('request');
 
@@ -10,9 +9,9 @@ const request = require('request');
  */
 
 let argv = require('yargs')
-     .usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethrpcport [port]')
+     .usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
      .default("sysrpcport", 18369)
-     .default("ethrpcport", 8546)
+     .default("ethwsport", 8546)
      .default("sysrpcuser", "u")
      .default("sysrpcpw", "p")
      .argv
@@ -21,40 +20,22 @@ if (argv.sysrpcport < 0 || argv.sysrpcport > 65535) {
     console.log('Invalid Syscoin RPC port');
     exit();
 }
-if (argv.ethrpcport < 0 || argv.ethrpcport > 65535) {
+if (argv.ethwsport < 0 || argv.ethwsport > 65535) {
 		console.log('Invalid Geth RPC port');
 		exit();
 }
 const sysrpcport = argv.sysrpcport;
-const ethrpcport = argv.ethrpcport;
+const ethwsport = argv.ethwsport;
 const sysrpcuser = argv.sysrpcuser;
 const sysrpcpw = argv.sysrpcpw;
-/* This is an attempt to use syscoin-js 
-var customHttpAgent = "";
-let syscoinClient = new SyscoinRpcClient({baseUrl : "localhost",
-                port : argv.syscoinrpcport,
-                username : "u",
-                password : "p",
-                useSsl : false,
-                timeout : 30000,
-                customHttpAgent,
-                loggerLevel : "", 
-                whitelist : [], 
-                blacklist : []});
-let info = syscoinClient.networkServices.getInfo();
-info.then((response) => response.json()).then((json) => {
-  console.info('got a response', json);
-});
-*/
 
 /* Initialize Geth Web3 */
-let web3 = new Web3("ws://127.0.0.1:" + argv.ethrpcport);
+let web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
 var collection = [];
 
 /* Geth subscriber for new block headers */
 const subscription_header = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
     if (error) return console.error(error);
-    console.log(blockHeader);
     let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
     collection.push(obj);
 });
@@ -86,12 +67,11 @@ function pushToRPC() {
     request(options, (error, response, body) => {
         if (error) {
             console.error('An error has occurred: ', error);
-        } else {
-            console.log('Post successful: response: ', body);
-        }
+        } 
     });
 
-	console.log("pushing to rpc", JSON.stringify(collection));
+	console.log("syscoinsetethheaders: ", JSON.stringify(collection));
+	collection = [];
 };
 
 // unsubscribes the header subscription
@@ -104,22 +84,19 @@ subscription_header.unsubscribe((error, success) => {
 
 /*  Subscription for Geth syncing status */
 const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
-	console.log("subscription_sync: callback");
-    if (!error)
-        console.log(sync);
-})
-.on("data", function(sync){
-    // show some syncing stats
-    console.log("subscription_sync: on data");
-})
-.on("changed", function(isSyncing){
-   if(isSyncing) {
-   console.log("subscription_sync: is_syncing = true");
-        // stop app operation
-    } else {
-    console.log("subscription_sync: is_syncing = false");
-        // regain app operation
-    }
+    if (error) return console.error(error);
+
+	var params = [];
+	if (typeof(sync) == "boolean") {
+		if (sync) {
+			params = ["syncing", 0];
+	    } else  {
+	     	params = ["synced", 0];
+		}
+	} else {
+		params = ["syncing", sync.status.HighestBlock];
+	}
+
 	let options = {
         url: "http://localhost:" + sysrpcport,
         method: "post",
@@ -131,7 +108,11 @@ const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
             user: sysrpcuser,
             pass: sysrpcpw 
         },
-        body: JSON.stringify( {"jsonrpc": "1.0", "id": "sync_update", "method": "syscoinsetethstatus", "params": [isSyncing]})
+        body: JSON.stringify( {
+				"jsonrpc": "1.0", 
+				"id": "sync_update", 
+				"method": "syscoinsetethstatus",
+				"params": params})
     };
     console.log(options.body);
 
@@ -142,6 +123,7 @@ const subscription_sync = web3.eth.subscribe('syncing', function(error, sync){
             console.log('Post successful: response: ', body);
         }
     });
+	console.log("syscoinsetethstatus: ", params);
 });
 
 // unsubscribes the subscription
