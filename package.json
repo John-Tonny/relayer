@@ -1,8 +1,11 @@
 {
-  "name": "websocket",
+  "name": "relayer",
   "version": "1.0.0",
   "description": "",
   "main": "relayer.js",
+  "bin": {
+    "relayer": "relayer.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
