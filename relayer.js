@@ -10,7 +10,7 @@ const request = require('request');
 
 let argv = require('yargs')
      .usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
-     .default("sysrpcport", 18369)
+     .default("sysrpcport", 8369)
      .default("ethwsport", 8546)
      .default("sysrpcuser", "u")
      .default("sysrpcpw", "p")
