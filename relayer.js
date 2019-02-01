@@ -9,16 +9,16 @@ const request = require('request');
  */
 
 let argv = require('yargs')
-     .usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
-     .default("sysrpcport", 8369)
-     .default("ethwsport", 8546)
-     .default("sysrpcuser", "u")
-     .default("sysrpcpw", "p")
-     .argv
+		.usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
+		.default("sysrpcport", 8369)
+		.default("ethwsport", 8546)
+		.default("sysrpcuser", "u")
+		.default("sysrpcpw", "p")
+		.argv
 ;
 if (argv.sysrpcport < 0 || argv.sysrpcport > 65535) {
-    console.log('Invalid Syscoin RPC port');
-    exit();
+		console.log('Invalid Syscoin RPC port');
+		exit();
 }
 if (argv.ethwsport < 0 || argv.ethwsport > 65535) {
 		console.log('Invalid Geth RPC port');
@@ -45,99 +45,99 @@ provider.on("end", err => {
 });
 
 provider.on("connect", data => {
-/* Geth subscriber for new block headers */
-const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
-    if (error) return console.error(error);
-	if (blockHeader['number'] > currentBlock) {
-		currentBlock = blockHeader['number'];
-	}
-    let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
-    collection.push(obj);
-});
+		/* Geth subscriber for new block headers */
+		const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
+				if (error) return console.error(error);
+				if (blockHeader['number'] > currentBlock) {
+						currentBlock = blockHeader['number'];
+				}
+				let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
+				collection.push(obj);
+		});
 
-/* Timer for submitting header lists to Syscoin via RPC */
-const timer = setInterval(pushToRPC, 5000);
-function pushToRPC() {
-	// Check if there's anything in the collection
-	if (collection.length == 0) {
-			// console.log("collection is empty");
-			return;
-	}
-	
-	// Request options
-	let options = {
-        url: "http://localhost:" + sysrpcport,
-        method: "post",
-        headers:
-        {
-            "content-type": "text/plain"
-        },
-        auth: {
-            user: sysrpcuser,
-            pass: sysrpcpw 
-        },
-        body: JSON.stringify( {"jsonrpc": "1.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
-    };
+		/* Timer for submitting header lists to Syscoin via RPC */
+		const timer = setInterval(pushToRPC, 5000);
+		function pushToRPC() {
+				// Check if there's anything in the collection
+				if (collection.length == 0) {
+						// console.log("collection is empty");
+						return;
+				}
 
-    request(options, (error, response, body) => {
-        if (error) {
-            console.error('An error has occurred: ', error);
-        } 
-    });
+				// Request options
+				let options = {
+						url: "http://localhost:" + sysrpcport,
+						method: "post",
+						headers:
+						{
+								"content-type": "text/plain"
+						},
+						auth: {
+								user: sysrpcuser,
+								pass: sysrpcpw 
+						},
+						body: JSON.stringify( {"jsonrpc": "1.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
+				};
 
-	console.log("syscoinsetethheaders: ", JSON.stringify(collection));
-	collection = [];
-};
+				request(options, (error, response, body) => {
+						if (error) {
+								console.error('An error has occurred: ', error);
+						} 
+				});
 
-/*  Subscription for Geth syncing status */
-const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
-    if (error) return console.error(error);
+				console.log("syscoinsetethheaders: ", JSON.stringify(collection));
+				collection = [];
+		};
 
-	var params = [];
-	if (typeof(sync) == "boolean") {
-		if (sync) {
-			params = ["syncing", 0];
-	    } else  {
-			// Syncing === false doesn't meant that it's done syncing.
-		    // It simply means it's not syncing
-		    if (currentBlock < highestBlock || highestBlock == 0) {
-				// highestBlock == 0 should really mean it's waiting to connect to peer
-			    params = ["syncing", highestBlock];
-			} else {
-	     	    params = ["synced", highestBlock];
-			}
-		}
-	} else {
-		highestBlock = sync.status.HighestBlock;
-		params = ["syncing", highestBlock];
-	}
+		/*  Subscription for Geth syncing status */
+		const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
+				if (error) return console.error(error);
 
-	let options = {
-        url: "http://localhost:" + sysrpcport,
-        method: "post",
-        headers:
-        {
-            "content-type": "text/plain"
-        },
-        auth: {
-            user: sysrpcuser,
-            pass: sysrpcpw 
-        },
-        body: JSON.stringify( {
-				"jsonrpc": "1.0", 
-				"id": "eth_sync_update", 
-				"method": "syscoinsetethstatus",
-				"params": params})
-    };
-    console.log(options.body);
+				var params = [];
+				if (typeof(sync) == "boolean") {
+						if (sync) {
+								params = ["syncing", 0];
+						} else  {
+								// Syncing === false doesn't meant that it's done syncing.
+								// It simply means it's not syncing
+								if (currentBlock < highestBlock || highestBlock == 0) {
+										// highestBlock == 0 should really mean it's waiting to connect to peer
+										params = ["syncing", highestBlock];
+								} else {
+										params = ["synced", highestBlock];
+								}
+						}
+				} else {
+						highestBlock = sync.status.HighestBlock;
+						params = ["syncing", highestBlock];
+				}
 
-    request(options, (error, response, body) => {
-        if (error) {
-            console.error('An error has occurred: ', error);
-        } else {
-            console.log('Post successful: response: ', body);
-        }
-    });
-	console.log("syscoinsetethstatus: ", params);
-});
+				let options = {
+						url: "http://localhost:" + sysrpcport,
+						method: "post",
+						headers:
+						{
+								"content-type": "text/plain"
+						},
+						auth: {
+								user: sysrpcuser,
+								pass: sysrpcpw 
+						},
+						body: JSON.stringify( {
+								"jsonrpc": "1.0", 
+								"id": "eth_sync_update", 
+								"method": "syscoinsetethstatus",
+								"params": params})
+				};
+				console.log(options.body);
+
+				request(options, (error, response, body) => {
+						if (error) {
+								console.error('An error has occurred: ', error);
+						} else {
+								console.log('Post successful: response: ', body);
+						}
+				});
+				console.log("syscoinsetethstatus: ", params);
+		});
 });
