@@ -31,10 +31,20 @@ const sysrpcpw = argv.sysrpcpw;
 
 /* Initialize Geth Web3 */
 let web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
+const provider = web3.currentProvider;
 var collection = [];
 var highestBlock = 0;
 var currentBlock = 0; 
 
+provider.on("error", err => {
+		console.log("web3 socket error", err)
+});
+
+provider.on("end", err => {
+		console.log("web3 socket closed", err)
+});
+
+provider.on("connect", data => {
 /* Geth subscriber for new block headers */
 const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
     if (error) return console.error(error);
@@ -78,14 +88,6 @@ function pushToRPC() {
 	console.log("syscoinsetethheaders: ", JSON.stringify(collection));
 	collection = [];
 };
-
-// unsubscribes the header subscription
-subscriptionHeader.unsubscribe((error, success) => {
-    if (error) return console.error(error);
-
-    console.log('Successfully unsubscribed!');
-	clearInterval(timer);
-});
 
 /*  Subscription for Geth syncing status */
 const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
@@ -138,10 +140,4 @@ const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
     });
 	console.log("syscoinsetethstatus: ", params);
 });
-
-// unsubscribes the subscription
-subscriptionSync.unsubscribe(function(error, success){
-    if(success)
-        console.log('Successfully unsubscribed!');
 });
-
