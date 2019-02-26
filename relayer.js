@@ -68,7 +68,7 @@ provider.on("connect", data => {
 	function RPCsyscoinsetethheaders() {
 		// Check if there's anything in the collection
 		if (collection.length == 0) {
-			console.log("collection is empty");
+			// console.log("collection is empty");
 			return;
 		}
 
@@ -148,7 +148,7 @@ provider.on("connect", data => {
 				"method": "syscoinsetethstatus",
 				"params": params})
 		};
-		console.log(options.body);
+		// console.log(options.body);
 
 		request(options, (error, response, body) => {
 			if (error) {
