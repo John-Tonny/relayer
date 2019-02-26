@@ -35,6 +35,7 @@ const provider = web3.currentProvider;
 var collection = [];
 var highestBlock = 0;
 var currentBlock = 0; 
+var timediff = 0;
 
 provider.on("error", err => {
 	console.log("web3 socket error", err)
@@ -45,24 +46,37 @@ provider.on("end", err => {
 });
 
 provider.on("connect", data => {
+    console.log("Subscribed to newBlockHeaders");
 	/* Geth subscriber for new block headers */
 	const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
 		if (error) return console.error(error);
 		if (blockHeader['number'] > currentBlock) {
 			currentBlock = blockHeader['number'];
 		}
+        if (currentBlock > highestBlock) {
+            highestBlock = currentBlock;
+        }
 		let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
 		collection.push(obj);
+
+        // Check blockheight and timestamp to notify synced status
+        timediff = new Date() / 1000 - blockHeader['timestamp'];
 	});
 
 	/* Timer for submitting header lists to Syscoin via RPC */
-	const timer = setInterval(pushToRPC, 5000);
-	function pushToRPC() {
+	const timer = setInterval(RPCsyscoinsetethheaders, 5000);
+	function RPCsyscoinsetethheaders() {
 		// Check if there's anything in the collection
 		if (collection.length == 0) {
-			// console.log("collection is empty");
+			console.log("collection is empty");
 			return;
 		}
+
+        if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
+            console.log("Geth is synced based on block height and timestamp");
+            RPCsyscoinsetethstatus(["synced", currentBlock]);
+            timediff = 0;
+        }
 
 		// Request options
 		let options = {
@@ -104,14 +118,19 @@ provider.on("connect", data => {
 					// highestBlock == 0 should really mean it's waiting to connect to peer
 					params = ["syncing", highestBlock];
 				} else {
+                    console.log("Geth is synced based on syncing subscription");
 					params = ["synced", highestBlock];
 				}
 			}
 		} else {
-			highestBlock = sync.status.HighestBlock;
+            if (highestBlock < sync.status.HighestBlock) {
+			    highestBlock = sync.status.HighestBlock;
+            }
 			params = ["syncing", highestBlock];
 		}
-
+        RPCsyscoinsetethstatus(params);
+	});
+    function RPCsyscoinsetethstatus(params) {
 		let options = {
 			url: "http://localhost:" + sysrpcport,
 			method: "post",
@@ -139,5 +158,5 @@ provider.on("connect", data => {
 			}
 		});
 		console.log("syscoinsetethstatus: ", params);
-	});
+    };
 });
