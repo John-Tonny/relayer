@@ -2,7 +2,6 @@
 
 const Web3 = require('web3');
 const request = require('request');
-
 /* 
  *  Usage:  Subscribe to Geth node and push header to syscoin via RPC 
  *
@@ -29,24 +28,36 @@ const ethwsport = argv.ethwsport;
 const sysrpcuser = argv.sysrpcuser;
 const sysrpcpw = argv.sysrpcpw;
 
-/* Initialize Geth Web3 */
-let web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
-const provider = web3.currentProvider;
-var collection = [];
+/* Global Variables */
 var highestBlock = 0;
 var currentBlock = 0; 
 var timediff = 0;
 
-provider.on("error", err => {
-    console.log("web3 socket error: Retrying...", err)
-    web3.setProvider(provider);
-});
+/* Initialize Geth Web3 */
+var web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
+var provider = web3.currentProvider;
+var collection = [];
 
-provider.on("end", err => {
-    console.log("Relayer ended");
-});
+SetupListener();
 
-provider.on("connect", data => {
+function SetupListener() {
+    provider.on("error", err => {
+        console.log("web3 socket error\n")
+    });
+
+    provider.on("end", err => {
+        console.log("web3 socket ended.  Retrying...\n");
+        setTimeout(function () {
+        provider = new Web3.providers.WebsocketProvider("ws://127.0.0.1:" + ethwsport);
+        web3.setProvider(provider);
+        SetupListener();
+        }, 3000);
+    });
+
+    provider.on("connect", function () {SetupSubscriber()});
+}
+
+function SetupSubscriber() {
     console.log("Subscribed to newBlockHeaders");
     /* Geth subscriber for new block headers */
     const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
@@ -160,4 +171,4 @@ provider.on("connect", data => {
         });
         console.log("syscoinsetethstatus: ", params);
     };
-});
+};
