@@ -35,35 +35,61 @@ var timediff = 0;
 
 /* Initialize Geth Web3 */
 var web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
+var web3_infura = new Web3("https://rinkeby.infura.io/v3/d178aecf49154b12be98e68e998cfb8d");
 var provider = web3.currentProvider;
+
+/* Array of headers to be pushed to RPC via syscoinsetethheaders */
 var collection = [];
+
+/* Variables for receiving missing block lists from Syscoin */
 var missingBlocks = [];
 var requestedBlocks = [];
 var downloadingBlocks = false;
+var timeSinceLastHeaders = 0;
+var timeSinceInfura = 0;
+var isListenerInfura = false;
+var currentWeb3 = null;
+var localProviderTimeOut = 30;
+var maxMissingBlocksPerCycle = 2000;
 
-SetupListener();
+SetupListener(web3, false);
 
-function SetupListener() {
+function SetupListener(web3, infura) {
     provider.on("error", err => {
         console.log("web3 socket error\n")
     });
 
     provider.on("end", err => {
+        // Attempt to try to reconnect every 3 seconds
         console.log("web3 socket ended.  Retrying...\n");
         setTimeout(function () {
-            provider = new Web3.providers.WebsocketProvider("ws://127.0.0.1:" + ethwsport);
+            if (infura == true) {
+                provider = new Web3.providers.WebsocketProvider("wss://mainnet.infura.io/ws/v3/d178aecf49154b12be98e68e998cfb8d");
+            } else {
+                provider = new Web3.providers.WebsocketProvider("ws://127.0.0.1:" + ethwsport);
+            }
             web3.setProvider(provider);
-            SetupListener();
+            SetupListener(web3, infura);
         }, 3000);
     });
 
-    provider.on("connect", function () {SetupSubscriber()});
+    provider.on("connect", function () {
+        currentWeb3 = web3;
+        SetupSubscriber();
+        isListenerInfura = infura;
+        if (isListenerInfura) {
+            console.log("Using Infura");
+            timeSinceInfura = new Date() / 1000;
+        } else {
+            console.log("Using local geth");
+        }
+    });
 }
 
 function SetupSubscriber() {
     console.log("Subscribed to newBlockHeaders");
     /* Geth subscriber for new block headers */
-    const subscriptionHeader = web3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
+    const subscriptionHeader = currentWeb3.eth.subscribe('newBlockHeaders', (error, blockHeader) => {
         if (error) return console.error(error);
         if (blockHeader['number'] > currentBlock) {
             currentBlock = blockHeader['number'];
@@ -76,11 +102,20 @@ function SetupSubscriber() {
 
         // Check blockheight and timestamp to notify synced status
         timediff = new Date() / 1000 - blockHeader['timestamp'];
+        timeSinceLastHeaders = new Date() / 1000;
     });
 
     /* Timer for submitting header lists to Syscoin via RPC */
     const timer = setInterval(RPCsyscoinsetethheaders, 5000);
     function RPCsyscoinsetethheaders() {
+        var nowTime = new Date() / 1000;
+        if (isListenerInfura == false && timeSinceLastHeaders > 0 && nowTime - timeSinceLastHeaders > localProviderTimeOut) {
+            SetupListener(web3_infura, true);
+        } else if (isListenerInfura == true && timeSinceInfura > 0 && nowTime - timeSinceInfura > localProviderTimeOut * 2) {
+            SetupListener(web3, false);
+        }
+
+
         // Check if there's anything in the collection
         if (collection.length == 0) {
             // console.log("collection is empty");
@@ -119,7 +154,7 @@ function SetupSubscriber() {
     };
 
     /*  Subscription for Geth syncing status */
-    const subscriptionSync = web3.eth.subscribe('syncing', function(error, sync){
+    const subscriptionSync = currentWeb3.eth.subscribe('syncing', function(error, sync){
         if (error) return console.error(error);
 
         var params = [];
@@ -189,9 +224,22 @@ function SetupSubscriber() {
         });
         console.log("syscoinsetethstatus: ", params);
     };
-    const timer2 = setInterval(retrieveBlock, 15000);
+    const timer2 = setInterval(retrieveBlock, 3000);
     function retrieveBlock() {
+        var complete = true;
+        var fetch_counter = 0;
+
         missingBlocks.forEach(function(value, key) {
+            fetch_counter++;
+            if (fetch_counter > maxMissingBlocksPerCycle) {
+                return;
+            }
+
+
+            if (value == true) {
+                complete = false;
+            }
+
             if (requestedBlocks.hasOwnProperty(key) && requestedBlocks[key] == true) {
                 return;
             }
@@ -199,9 +247,9 @@ function SetupSubscriber() {
             requestedBlocks[key] = true;
             if (value) {
                 try {
-                    web3.eth.getBlock(key, function(error, result) {
+                    currentWeb3.eth.getBlock(key, function(error, result) {
                         if (error) {
-                            web3Infura.eth.getBlock(key, function(error, result){
+                            web3_infura.eth.getBlock(key, function(error, result){
                                 if (error) {
                                     requestedBlocks[key] = false;
                                     console.log("infura error: ", error);
@@ -226,6 +274,10 @@ function SetupSubscriber() {
 
             }
         });
+        if (complete == true) {
+            missingBlocks = [];
+            requestedBlocks = [];
+        }
 
 
     }
