@@ -2,7 +2,8 @@ Relayer - Light Weight Node.js app for Relaying Syscoin and Geth
 ================================================================
 
 This app subscribes "newBlockHeaders" and "sync" from Go-Ethereum
-via web3.js.  Then it pushes the data to syscoin via RPC
+via web3.js.  Then it pushes the data to syscoin via RPC through
+`syscoinsetethheaders` and `syscoinsetethstatus`
 
 Requirement
 -----------
