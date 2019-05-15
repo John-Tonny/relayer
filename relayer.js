@@ -37,6 +37,9 @@ var timediff = 0;
 var web3 = new Web3("ws://127.0.0.1:" + argv.ethwsport);
 var provider = web3.currentProvider;
 var collection = [];
+var missingBlocks = [];
+var requestedBlocks = [];
+var downloadingBlocks = false;
 
 SetupListener();
 
@@ -48,9 +51,9 @@ function SetupListener() {
     provider.on("end", err => {
         console.log("web3 socket ended.  Retrying...\n");
         setTimeout(function () {
-        provider = new Web3.providers.WebsocketProvider("ws://127.0.0.1:" + ethwsport);
-        web3.setProvider(provider);
-        SetupListener();
+            provider = new Web3.providers.WebsocketProvider("ws://127.0.0.1:" + ethwsport);
+            web3.setProvider(provider);
+            SetupListener();
         }, 3000);
     });
 
@@ -68,7 +71,7 @@ function SetupSubscriber() {
         if (currentBlock > highestBlock) {
             highestBlock = currentBlock;
         }
-        let obj = [blockHeader['number'],blockHeader['transactionsRoot']];
+        let obj = [blockHeader['number'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot']];
         collection.push(obj);
 
         // Check blockheight and timestamp to notify synced status
@@ -166,9 +169,64 @@ function SetupSubscriber() {
             if (error) {
                 console.error('An error has occurred: ', error);
             } else {
-                console.log('Post successful: response: ', body);
+                console.log('Post successful: ', body);
+                var parsedBody = JSON.parse(body);
+                var missingBlockRanges = parsedBody.result.missing_blocks;
+                var counter = 0;
+
+                if (missingBlockRanges.length == 0) {
+                    console.log(" there is no missing_blocks ");
+                } else {
+                    for(var i = 0; i < missingBlockRanges.length; i++) {
+                        for(var i2 = missingBlockRanges[i].from; i2 <= missingBlockRanges[i].to; i2++) {
+                            missingBlocks[i2] = true;
+                            counter++;
+                        }
+                    }
+                }
+                console.log("missingBlocks count: ", counter);
             }
         });
         console.log("syscoinsetethstatus: ", params);
     };
+    const timer2 = setInterval(retrieveBlock, 15000);
+    function retrieveBlock() {
+        missingBlocks.forEach(function(value, key) {
+            if (requestedBlocks.hasOwnProperty(key) && requestedBlocks[key] == true) {
+                return;
+            }
+
+            requestedBlocks[key] = true;
+            if (value) {
+                try {
+                    web3.eth.getBlock(key, function(error, result) {
+                        if (error) {
+                            web3Infura.eth.getBlock(key, function(error, result){
+                                if (error) {
+                                    requestedBlocks[key] = false;
+                                    console.log("infura error: ", error);
+                                }
+                                else if (result != "undefined") {
+                                    missingBlocks[key] = false;
+                                    let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
+                                    collection.push(obj);
+                                }
+                            });
+                        }
+                        else if (result != "undefined") {
+                            missingBlocks[key] = false;
+                            let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
+                            collection.push(obj);
+                        }
+                    });
+                } catch(e) {
+                    requestedBlocks[key] = false;
+                    console.log("getBlock: error2", e, key, missingBlocks[key], value, requestedBlocks[key]);
+                }
+
+            }
+        });
+
+
+    }
 };
