@@ -5,7 +5,6 @@ const request = require('request');
 const fs = require('fs');
 const util = require('util');
 const Getter = require('./getter.js');
-console.log(Getter);
 /* 
  *  Usage:  Subscribe to Geth node and push header to syscoin via RPC 
  *
