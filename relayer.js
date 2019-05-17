@@ -119,17 +119,17 @@ function SetupListener(web3In, infura) {
 setInterval(RPCsyscoinsetethheaders, 5000);
 function RPCsyscoinsetethheaders() {
 	var nowTime = new Date() / 1000;
-	var timeOutToSwitchToInfura = 3; //localProviderTimeOut;
+	var timeOutToSwitchToInfura = localProviderTimeOut;
 	// if we are missing blocks we should set this timeout to something small as we need those blocks ASAP
 	var remainingBlocks = getter.remainingBlockCount;
 	if (remainingBlocks > 0) {
 		console.log("RPCsyscoinsetethheadaers: Getter remaining blocks: " + remainingBlocks);
 	}
-/*
+
 	if(missingBlocks.length > 0){
 		timeOutToSwitchToInfura = 65; // 65 seconds to switch
 	}
-*/
+
 	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
         console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
 		SetupListener(web3_infura, true);

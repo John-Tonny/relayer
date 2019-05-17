@@ -1,16 +1,17 @@
 
+"use strict"
 const maxAsyncRequests = 8;
 
-module.exports = class Getter {
+class Getter {
 	constructor(web3) {
 		this.web3 = web3;
 	}
 	setWeb3(web3){
-		console.log("Getter: Switched web3 provider to " + web3);
+		console.log("Getter: Switched web3 provider to ");
 		this.web3 = web3;
 	}
-	assertConnected() {
-		if(!this.web3.isConnected()){
+	async assertConnected() {
+		if(!this.web3.currentProvider){
 			console.error("Getter: Web3 not connected!");	
 			return false;	
 		}
@@ -34,7 +35,10 @@ module.exports = class Getter {
 
 
 			var handler = function(err, block){
-				if(err) console.error(err, block);
+				if (err) {
+					console.error(err, block);
+					resolve(null);
+				}
 				else {
 					
 					if(block == null){
@@ -111,11 +115,11 @@ module.exports = class Getter {
 		if(!this.assertConnected())
 			return;
 
-		const blocksReq = this.downloadBlocks(start, end);
+		const blocksReq = await this.downloadBlocks(start, end);
 
-		const res = await Promise.all([blocksReq]);
-		const formatted = {block: res[0]};
-
-		return formatted;
+		return blocksReq;
 	}
 }
+
+module.exports = Getter;
+
