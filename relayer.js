@@ -4,7 +4,8 @@ const Web3 = require('web3');
 const request = require('request');
 const fs = require('fs');
 const util = require('util');
-const Getter = require('getter');
+const Getter = require('./getter.js');
+console.log(Getter);
 /* 
  *  Usage:  Subscribe to Geth node and push header to syscoin via RPC 
  *
@@ -67,7 +68,9 @@ var isListenerInfura = false;
 var currentWeb3 = null;
 var localProviderTimeOut = 300;
 var timeOutProvider = null;
+var missingBlockChunkSize = 100;
 
+var getter = new Getter(web3);
 SetupListener(web3, false);
 
 function SetupListener(web3In, infura) {
@@ -98,7 +101,7 @@ function SetupListener(web3In, infura) {
 	currentWeb3 = web3In;
 	// change web3 provider on Getter so if it is stuck getting range of blocks it can switch to try to get out and also
 	// for subsequent gets it should use this new web3 provider
-	Getter.setWeb3(currentWeb3);
+	getter.setWeb3(currentWeb3);
 	isListenerInfura = infura;
 	if (timeOutProvider != null) {
 		clearTimeout(timeOutProvider);
@@ -117,11 +120,17 @@ function SetupListener(web3In, infura) {
 setInterval(RPCsyscoinsetethheaders, 5000);
 function RPCsyscoinsetethheaders() {
 	var nowTime = new Date() / 1000;
-	var timeOutToSwitchToInfura = localProviderTimeOut;
+	var timeOutToSwitchToInfura = 3; //localProviderTimeOut;
 	// if we are missing blocks we should set this timeout to something small as we need those blocks ASAP
+	var remainingBlocks = getter.remainingBlockCount;
+	if (remainingBlocks > 0) {
+		console.log("RPCsyscoinsetethheadaers: Getter remaining blocks: " + remainingBlocks);
+	}
+/*
 	if(missingBlocks.length > 0){
 		timeOutToSwitchToInfura = 65; // 65 seconds to switch
 	}
+*/
 	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
         console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
 		SetupListener(web3_infura, true);
@@ -179,46 +188,95 @@ function RPCsyscoinsetethheaders() {
 };
 
 setTimeout(retrieveBlock, 3000);
-function retrieveBlock() {
+async function retrieveBlock() {
+        try {
 	if(missingBlocks.length > 0){
+
 		var lastItem = Object.assign({}, missingBlocks.pop());
-		fetchingBlocks.push_back(lastItem);
-		console.log("retrieveBlock: Fetching range " + lastItem);
-		let fetchedBlocks = await Getter.getAll(lastItem.from, lastItem.to);
+		fetchingBlocks.push(lastItem);
+		console.log("retrieveBlock: Fetching range " + JSON.stringify(lastItem));
+		let fetchedBlocks = await getter.getAll(lastItem.from, lastItem.to);
 		fetchingBlocks.pop();
 		if(!fetchedBlocks || fetchedBlocks.length <= 0){
-			missingBlocks.push_back(lastItem);
-			console.log("retrieveBlock: Could not fetch range " + lastItem + " pushing back to missingBlocks...");
+			missingBlocks.push(lastItem);
+			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(lastItem) + " pushing back to missingBlocks...");
 		}
 		else{
-			console.log("retrieveBlock: Fetched range " + lastItem);
+			console.log("retrieveBlock: Fetched range " + JSON.stringify(lastItem));
 		}
+/*
 		for(let i=0; i<fetchedBlocks.length; i++) {
 			let result = fetchedBlocks[i];
 			let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
+			console.log("TEST", result);
 			collection.push(obj);
 		}
+*/
+		for (var key in fetchedBlocks) {
+			var result = fetchedBlocks[key];
+			var obj = [result.number,result.transactionsRoot,result.receiptsRoot];
+			collection.push(obj);
+		}
+/*
+
+		fetchedBlocks.forEach(function(result, key) {
+			
+			let obj = [result.number,result.transactionsRoot,result.receiptsRoot];
+			collection.push(obj);
+			console.log("TEST: collection should be updated " + JSON.stringify(result));
+				
+		});
+*/
+
 		setTimeout(retrieveBlock, 300);
 	}
 	else	
 		setTimeout(retrieveBlock, 3000);
+        } catch(e) {
+		setTimeout(retrieveBlock, 3000);
+}
 };
-function UpdateMissingBlocksBasedOnFetchingBLocks(){
-	var prevCount = missingBlocks.length;
+function UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks){
+	var prevCount = rawMissingBlocks.length;
 	var removingIndexes = [];
-	for(var i =0;i<missingBlocks.length;i++){
+	for(var i =0;i<rawMissingBlocks.length;i++){
 		for(var j = 0;j<fetchingBlocks.length;j++){
-			if(missingBlocks[i].from == fetchingBlocks[j].from && missingBlocks[i].to == fetchingBlocks[j].to){
-				removingIndexes.push_back(i);
+			if(rawMissingBlocks[i].from == fetchingBlocks[j].from && rawMissingBlocks[i].to == fetchingBlocks[j].to){
+				removingIndexes.push(i);
 			}
 		}
 	}
 	for(var i =0;i<removingIndexes.length;i++){
-		missingBlocks.splice(removingIndexes[i], 1);
+		rawMissingBlocks.splice(removingIndexes[i], 1);
 	}
-	var postCount = missingBlocks.length;
+	var postCount = rawMissingBlocks.length;
 	if(removingIndexes.length > 0){
-		console.log("UpdateMissingBlocksBasedOnFetchingBLocks: Removing missing block " + removingIndexes.length + " indexes because they are currently being fetched, had " + prevCount + " missing ranges and now have " + postCount + " missing ranges.");
+		console.log("UpdateMissingBlocksBasedOnFetchingBlocks: Removing missing block " + removingIndexes.length + " indexes because they are currently being fetched, had " + prevCount + " missing ranges and now have " + postCount + " missing ranges.");
+	}
+}
+function breakdownMissingBlocks(rawMissingBlocks) {
+	var tempBlocks = [];
+	for(var i=0; i<rawMissingBlocks.length; i++) {
+		var from = rawMissingBlocks[i].from;
+	 	var to = rawMissingBlocks[i].to;		
+		var blockDiff = to - from;
+		if(blockDiff > missingBlockChunkSize) {
+			var modulus = blockDiff % missingBlockChunkSize;
+			var set = Math.floor(blockDiff/missingBlockChunkSize);
+			for (var j=0; j < set; j++) {
+				var obj = {"from": from + j*missingBlockChunkSize, "to": from + (j+1)*missingBlockChunkSize - 1};
+				tempBlocks.push(obj);
+			}	
+			
+			var lastFrom = from + set * missingBlockChunkSize;
+			var lastTo = lastFrom + modulus;
+			rawMissingBlocks.push({"from": lastFrom, "to": lastTo});
+			rawMissingBlocks.splice(i,1);
+		}
+	}
+	console.log("tempBlocks size: ", tempBlocks.length);
+	for(var i=0; i < tempBlocks.length; i++) {
+		rawMissingBlocks.push(tempBlocks[i]);
 	}
 }
 function RPCsyscoinsetethstatus(params) {
@@ -248,13 +306,15 @@ function RPCsyscoinsetethstatus(params) {
 			console.log('RPCsyscoinsetethstatus: Post successful; received missing blocks reply: ', body);
 			var parsedBody = JSON.parse(body);
             if (parsedBody != null) {
-				missingBlocks = parsedBody.result.missing_blocks;
-				UpdateMissingBlocksBasedOnFetchingBLocks();
+				var rawMissingBlocks = parsedBody.result.missing_blocks;
+				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
+				breakdownMissingBlocks(rawMissingBlocks);
+				missingBlocks = rawMissingBlocks;
 			    if (missingBlocks.length == 0) {
 			    	console.log("RPCsyscoinsetethstatus: There is no missing blocks");
 				}
 				else{
-					console.log("RPCsyscoinsetethstatus: missingBlocks count: ", counter);
+					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + missingBlocks.length);
 				}
             }
 		}
