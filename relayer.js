@@ -4,6 +4,7 @@ const Web3 = require('web3');
 const request = require('request');
 const fs = require('fs');
 const util = require('util');
+const Getter = require('getter');
 /* 
  *  Usage:  Subscribe to Geth node and push header to syscoin via RPC 
  *
@@ -54,19 +55,17 @@ var subscriptionHeader = null;
 /* Global Arrays */
 var collection = [];
 var missingBlocks = [];
-var requestedBlocks = [];
+var fetchingBlocks = [];
 
 /* Global Variables */
 var highestBlock = 0;
 var currentBlock = 0; 
 var timediff = 0;
-var downloadingBlocks = false;
 var timeSinceLastHeaders = new Date() / 1000;
 var timeSinceInfura = 0;
 var isListenerInfura = false;
 var currentWeb3 = null;
 var localProviderTimeOut = 300;
-var maxMissingBlocksPerCycle = 400;
 var timeOutProvider = null;
 
 SetupListener(web3, false);
@@ -97,6 +96,9 @@ function SetupListener(web3In, infura) {
 	});
 	cancelSubscriptions();
 	currentWeb3 = web3In;
+	// change web3 provider on Getter so if it is stuck getting range of blocks it can switch to try to get out and also
+	// for subsequent gets it should use this new web3 provider
+	Getter.setWeb3(currentWeb3);
 	isListenerInfura = infura;
 	if (timeOutProvider != null) {
 		clearTimeout(timeOutProvider);
@@ -112,10 +114,15 @@ function SetupListener(web3In, infura) {
 }
 
 /* Timer for submitting header lists to Syscoin via RPC */
-const timer = setInterval(RPCsyscoinsetethheaders, 5000);
+setInterval(RPCsyscoinsetethheaders, 5000);
 function RPCsyscoinsetethheaders() {
 	var nowTime = new Date() / 1000;
-	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > localProviderTimeOut) {
+	var timeOutToSwitchToInfura = localProviderTimeOut;
+	// if we are missing blocks we should set this timeout to something small as we need those blocks ASAP
+	if(missingBlocks.length > 0){
+		timeOutToSwitchToInfura = 65; // 65 seconds to switch
+	}
+	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
         console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
 		SetupListener(web3_infura, true);
 		if (timeOutProvider != null) {
@@ -138,11 +145,7 @@ function RPCsyscoinsetethheaders() {
 		return;
 	}
 
-	if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
-		console.log("RPCsyscoinsetethheaders: Geth should be synced based on current block height and timestamp");
-		RPCsyscoinsetethstatus(["synced", currentBlock]);
-		timediff = 0;
-	}
+
 
 	// Request options
 	let options = {
@@ -164,72 +167,60 @@ function RPCsyscoinsetethheaders() {
 			console.error('RPCsyscoinsetethheaders: An error has occurred during request: ', error);
 		} 
 	});
-
+	timeSinceLastHeaders = new Date() / 1000;
     console.log("RPCsyscoinsetethheaders: Successfully pushed " + collection.length + " headers to Syscoin Core");
 	collection = [];
-};
 
-const timer2 = setInterval(retrieveBlock, 3000);
-function retrieveBlock() {
-	var complete = true;
-	var fetch_counter = 0;
-
-	missingBlocks.forEach(function(value, key) {
-		if (value == true) {
-			complete = false;
-			fetch_counter++;
-		}
-
-		if (fetch_counter > maxMissingBlocksPerCycle) {
-			return;
-		}
-
-
-		if (requestedBlocks.hasOwnProperty(key) && requestedBlocks[key] == true) {
-			return;
-		}
-
-		requestedBlocks[key] = true;
-		if (value) {
-			try {
-				currentWeb3.eth.getBlock(key, function(error, result) {
-					if (error) {
-						web3_infura.eth.getBlock(key, function(error, result){
-							if (error) {
-								requestedBlocks[key] = false;
-								console.log("RetrieveBlock: getBlock: Infura error: ", error);
-							}
-							else if (result != "undefined") {
-								missingBlocks[key] = false;
-								let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
-								collection.push(obj);
-							}
-						});
-					}
-					else if (result != "undefined") {
-						missingBlocks[key] = false;
-						let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
-						collection.push(obj);
-					}
-				});
-			} catch (e) {
-				requestedBlocks[key] = false;
-				console.log("RetrieveBlock: getBlock caught error", e, key, missingBlocks[key], value, requestedBlocks[key]);
-			}
-
-		}
-	});
-
-
-	if (complete == true) {
-		if (missingBlocks.length > 0) {
-			console.log("RetrieveBlock: Clearing missingBlocks");
-		}
-		missingBlocks = [];
-		requestedBlocks = [];
+	if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
+		console.log("RPCsyscoinsetethheaders: Geth should be synced based on current block height and timestamp");
+		RPCsyscoinsetethstatus(["synced", currentBlock]);
+		timediff = 0;
 	}
 };
 
+setTimeout(retrieveBlock, 3000);
+function retrieveBlock() {
+	if(missingBlocks.length > 0){
+		var lastItem = Object.assign({}, missingBlocks.pop());
+		fetchingBlocks.push_back(lastItem);
+		console.log("retrieveBlock: Fetching range " + lastItem);
+		let fetchedBlocks = await Getter.getAll(lastItem.from, lastItem.to);
+		fetchingBlocks.pop();
+		if(!fetchedBlocks || fetchedBlocks.length <= 0){
+			missingBlocks.push_back(lastItem);
+			console.log("retrieveBlock: Could not fetch range " + lastItem + " pushing back to missingBlocks...");
+		}
+		else{
+			console.log("retrieveBlock: Fetched range " + lastItem);
+		}
+		for(let i=0; i<fetchedBlocks.length; i++) {
+			let result = fetchedBlocks[i];
+			let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
+			collection.push(obj);
+		}
+		setTimeout(retrieveBlock, 300);
+	}
+	else	
+		setTimeout(retrieveBlock, 3000);
+};
+function UpdateMissingBlocksBasedOnFetchingBLocks(){
+	var prevCount = missingBlocks.length;
+	var removingIndexes = [];
+	for(var i =0;i<missingBlocks.length;i++){
+		for(var j = 0;j<fetchingBlocks.length;j++){
+			if(missingBlocks[i].from == fetchingBlocks[j].from && missingBlocks[i].to == fetchingBlocks[j].to){
+				removingIndexes.push_back(i);
+			}
+		}
+	}
+	for(var i =0;i<removingIndexes.length;i++){
+		missingBlocks.splice(removingIndexes[i], 1);
+	}
+	var postCount = missingBlocks.length;
+	if(removingIndexes.length > 0){
+		console.log("UpdateMissingBlocksBasedOnFetchingBLocks: Removing missing block " + removingIndexes.length + " indexes because they are currently being fetched, had " + prevCount + " missing ranges and now have " + postCount + " missing ranges.");
+	}
+}
 function RPCsyscoinsetethstatus(params) {
 	let options = {
 		url: "http://localhost:" + sysrpcport,
@@ -257,21 +248,14 @@ function RPCsyscoinsetethstatus(params) {
 			console.log('RPCsyscoinsetethstatus: Post successful; received missing blocks reply: ', body);
 			var parsedBody = JSON.parse(body);
             if (parsedBody != null) {
-		    	var missingBlockRanges = parsedBody.result.missing_blocks;
-			    var counter = 0;
-
-                /* Check for missing blocks and add the blocks to array */
-			    if (missingBlockRanges.length == 0) {
+				missingBlocks = parsedBody.result.missing_blocks;
+				UpdateMissingBlocksBasedOnFetchingBLocks();
+			    if (missingBlocks.length == 0) {
 			    	console.log("RPCsyscoinsetethstatus: There is no missing blocks");
-			    } else {
-			    	for(var i = 0; i < missingBlockRanges.length; i++) {
-			     		for(var i2 = missingBlockRanges[i].from; i2 <= missingBlockRanges[i].to; i2++) {
-				    		missingBlocks[i2] = true;
-					    	counter++;
-				    	}
-				    }
-			    }
-			    console.log("RPCsyscoinsetethstatus: missingBlocks count: ", counter);
+				}
+				else{
+					console.log("RPCsyscoinsetethstatus: missingBlocks count: ", counter);
+				}
             }
 		}
 	});
@@ -295,7 +279,6 @@ function SetupSubscriber() {
 
 		// Check blockheight and timestamp to notify synced status
 		timediff = new Date() / 1000 - blockHeader['timestamp'];
-		timeSinceLastHeaders = new Date() / 1000;
 	});
 
 
