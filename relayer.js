@@ -269,13 +269,13 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 			
 			var lastFrom = from + set * missingBlockChunkSize;
 			var lastTo = lastFrom + modulus;
-			rawMissingBlocks.push({"from": lastFrom, "to": lastTo});
+			tempBlocks.push({"from": lastFrom, "to": lastTo});
 			rawMissingBlocks.splice(i,1);
 		}
 	}
 	console.log("tempBlocks size: ", tempBlocks.length);
-	for(var i=0; i < tempBlocks.length; i++) {
-		rawMissingBlocks.push(tempBlocks[i]);
+	for(var i = tempBlocks.length - 1; i >= 0;  i--) {
+		rawMissingBlocks.unshift(tempBlocks[i]);
 	}
 }
 function RPCsyscoinsetethstatus(params) {

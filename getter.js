@@ -36,7 +36,7 @@ class Getter {
 
 			var handler = function(err, block){
 				if (err) {
-					console.error(err, block);
+			//		console.error(err, block);
 					resolve(null);
 				}
 				else {
