@@ -10,7 +10,7 @@ const util = require('util');
  */
 
 /* Set up logging */
-var logFile = fs.createWriteStream('relayer-debug-log.txt', { flags: 'a' });
+var logFile = fs.createWriteStream('relayer-debug.log', { flags: 'a' });
 var logStdout = process.stdout;
 
 console.log = function () {
