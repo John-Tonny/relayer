@@ -45,7 +45,7 @@ const sysrpcuser = argv.sysrpcuser;
 const sysrpcpw = argv.sysrpcpw;
 
 /* Initialize Geth Web3 */
-var infura_ws_url = "wss://rinkeby.infura.io/ws/v3/d178aecf49154b12be98e68e998cfb8d";
+var infura_ws_url = "wss://rinkeby.infura.io/ws/v3/b3d07005e22f4127ba935ce09b9a2a8d";
 var geth_ws_url = "ws://127.0.0.1:" + ethwsport;
 var web3 = new Web3(geth_ws_url);
 var web3_infura = new Web3(infura_ws_url);
@@ -256,7 +256,6 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 			rawMissingBlocks.splice(i,1);
 		}
 	}
-	console.log("tempBlocks size: ", tempBlocks.length);
 	for(var i = tempBlocks.length - 1; i >= 0;  i--) {
 		rawMissingBlocks.unshift(tempBlocks[i]);
 	}
