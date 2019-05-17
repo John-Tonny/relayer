@@ -7,7 +7,7 @@ class Getter {
 		this.web3 = web3;
 	}
 	setWeb3(web3){
-		console.log("Getter: Switched web3 provider to ");
+		console.log("Getter: Switched web3 provider");
 		this.web3 = web3;
 	}
 	async assertConnected() {
