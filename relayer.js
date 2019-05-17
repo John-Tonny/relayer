@@ -188,53 +188,36 @@ function RPCsyscoinsetethheaders() {
 
 setTimeout(retrieveBlock, 3000);
 async function retrieveBlock() {
-        try {
-	if(missingBlocks.length > 0){
+    try {
+	    if(missingBlocks.length > 0){
+    		var lastItem = Object.assign({}, missingBlocks.pop());
+    		fetchingBlocks.push(lastItem);
+    		console.log("retrieveBlock: Fetching range " + JSON.stringify(lastItem));
+    		let fetchedBlocks = await getter.getAll(lastItem.from, lastItem.to);
+    		fetchingBlocks.pop();
+    		if(!fetchedBlocks || fetchedBlocks.length <= 0){
+    			missingBlocks.push(lastItem);
+    			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(lastItem) + " pushing back to missingBlocks...");
+    		}
+    		else{
+    			console.log("retrieveBlock: Fetched range " + JSON.stringify(lastItem));
+    		}
+    		for (var key in fetchedBlocks) {
+    			var result = fetchedBlocks[key];
+    			var obj = [result.number,result.transactionsRoot,result.receiptsRoot];
+    			collection.push(obj);
+    		}
 
-		var lastItem = Object.assign({}, missingBlocks.pop());
-		fetchingBlocks.push(lastItem);
-		console.log("retrieveBlock: Fetching range " + JSON.stringify(lastItem));
-		let fetchedBlocks = await getter.getAll(lastItem.from, lastItem.to);
-		fetchingBlocks.pop();
-		if(!fetchedBlocks || fetchedBlocks.length <= 0){
-			missingBlocks.push(lastItem);
-			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(lastItem) + " pushing back to missingBlocks...");
-		}
-		else{
-			console.log("retrieveBlock: Fetched range " + JSON.stringify(lastItem));
-		}
-/*
-		for(let i=0; i<fetchedBlocks.length; i++) {
-			let result = fetchedBlocks[i];
-			let obj = [result['number'],result['transactionsRoot'],result['receiptsRoot']];
-			console.log("TEST", result);
-			collection.push(obj);
-		}
-*/
-		for (var key in fetchedBlocks) {
-			var result = fetchedBlocks[key];
-			var obj = [result.number,result.transactionsRoot,result.receiptsRoot];
-			collection.push(obj);
-		}
-/*
-
-		fetchedBlocks.forEach(function(result, key) {
-			
-			let obj = [result.number,result.transactionsRoot,result.receiptsRoot];
-			collection.push(obj);
-			console.log("TEST: collection should be updated " + JSON.stringify(result));
-				
-		});
-*/
-
-		setTimeout(retrieveBlock, 300);
-	}
-	else	
+    		setTimeout(retrieveBlock, 300);
+    	}
+        else {	
+    		setTimeout(retrieveBlock, 3000);
+        }
+    } catch (e) {
 		setTimeout(retrieveBlock, 3000);
-        } catch(e) {
-		setTimeout(retrieveBlock, 3000);
-}
+    }
 };
+
 function UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks){
 	var prevCount = rawMissingBlocks.length;
 	var removingIndexes = [];
