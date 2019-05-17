@@ -53,8 +53,8 @@ var subscriptionHeader = null;
 
 /* Global Arrays */
 var collection = [];
-var missingBlocks = {};
-var requestedBlocks = {};
+var missingBlocks = [];
+var requestedBlocks = [];
 
 /* Global Variables */
 var highestBlock = 0;
@@ -92,7 +92,7 @@ function SetupListener(web3In, infura) {
 	});
 
 	provider.on("connect", function () {
-		console.log("SetupListener: web3 connected: ", infura ? "Infura" : "Local Geth");
+		console.log("SetupListener: web3 connected");
 		SetupSubscriber();
 	});
 	cancelSubscriptions();
@@ -174,8 +174,7 @@ function retrieveBlock() {
 	var complete = true;
 	var fetch_counter = 0;
 
-	for (var key in missingBlocks) {
-		var value = missingBlocks[key];
+	missingBlocks.forEach(function(value, key) {
 		if (value == true) {
 			complete = false;
 			fetch_counter++;
@@ -219,15 +218,15 @@ function retrieveBlock() {
 			}
 
 		}
-	}
+	});
 
 
 	if (complete == true) {
-		if (Object.keys(missingBlocks).length > 0) {
+		if (missingBlocks.length > 0) {
 			console.log("RetrieveBlock: Clearing missingBlocks");
 		}
-		missingBlocks = {};
-		requestedBlocks = {};
+		missingBlocks = [];
+		requestedBlocks = [];
 	}
 };
 
@@ -261,9 +260,6 @@ function RPCsyscoinsetethstatus(params) {
 		    	var missingBlockRanges = parsedBody.result.missing_blocks;
 			    var counter = 0;
 
-                // TODO: 
-         	  	missingBlocks = {};
-
                 /* Check for missing blocks and add the blocks to array */
 			    if (missingBlockRanges.length == 0) {
 			    	console.log("RPCsyscoinsetethstatus: There is no missing blocks");
@@ -275,7 +271,7 @@ function RPCsyscoinsetethstatus(params) {
 				    	}
 				    }
 			    }
-			    console.log("RPCsyscoinsetethstatus: missingBlocks count: ", counter, Object.keys(missingBlocks).length);
+			    console.log("RPCsyscoinsetethstatus: missingBlocks count: ", counter);
             }
 		}
 	});
