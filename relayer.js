@@ -273,7 +273,6 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 			rawMissingBlocks.splice(i,1);
 		}
 	}
-	console.log("tempBlocks size: ", tempBlocks.length);
 	for(var i = tempBlocks.length - 1; i >= 0;  i--) {
 		rawMissingBlocks.unshift(tempBlocks[i]);
 	}
@@ -309,10 +308,7 @@ function RPCsyscoinsetethstatus(params) {
 				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
 				breakdownMissingBlocks(rawMissingBlocks);
 				missingBlocks = rawMissingBlocks;
-			    if (missingBlocks.length == 0) {
-			    	console.log("RPCsyscoinsetethstatus: There is no missing blocks");
-				}
-				else{
+			    if (missingBlocks.length > 0) {
 					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + missingBlocks.length);
 				}
             }
