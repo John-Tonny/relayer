@@ -21,7 +21,7 @@ console.log = function () {
 }
 console.error = console.log;
 
-
+console.log("Running V1.0.8 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 /* Retrieve arguments */
 let argv = require('yargs')
 	.usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
