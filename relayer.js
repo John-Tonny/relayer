@@ -139,10 +139,13 @@ function RPCsyscoinsetethheaders() {
 			clearTimeout(timeOutProvider);
 			timeOutProvider = null;
 		}
+		// if Getter is stuck on await allow to startup another timer to request again
 		if(missingBlockTimer != null){
 			clearTimeout(missingBlockTimer);
 			setTimeout(retrieveBlock, 3000);
 		}
+		// clear fetching blocks so it will reset and allow to fetch it again
+		fetchingBlocks = [];
 	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > (localProviderTimeOut * 2)) {
         console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
 		timeSinceLastHeaders = new Date() / 1000;
@@ -151,10 +154,13 @@ function RPCsyscoinsetethheaders() {
 			clearTimeout(timeOutProvider);
 			timeOutProvider = null;
 		}
+		// if Getter is stuck on await allow to startup another timer to request again
 		if(missingBlockTimer != null){
 			clearTimeout(missingBlockTimer);
 			setTimeout(retrieveBlock, 3000);
 		}	
+		// clear fetching blocks so it will reset and allow to fetch it again
+		fetchingBlocks = [];
 	}
 
 
