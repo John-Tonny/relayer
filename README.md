@@ -20,7 +20,7 @@ How to Build
 
 `pkg package.json`
 
-This will produce portable binaries to be used in other systems
+This will produce portable binaries to be used in other systems. Note for linux builds it must be built in linux otherwise it will fail to launch.
 
 How to Use
 ----------
