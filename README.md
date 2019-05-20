@@ -7,7 +7,7 @@ via web3.js.  Then it pushes the data to syscoin via RPC through
 
 Requirement
 -----------
-This repository current requires node v9.5.0 and pkg@4.3.1
+This repository currently requires node v9.5.0 and pkg@4.3.1
 
 
 How to Build
