@@ -114,10 +114,7 @@ class Getter {
 	async getAll(start, end) {
 		if(!this.assertConnected())
 			return;
-
-		const blocksReq = await this.downloadBlocks(start, end);
-
-		return blocksReq;
+		return this.downloadBlocks(start, end);
 	}
 }
 

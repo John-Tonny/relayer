@@ -21,7 +21,7 @@ console.log = function () {
 }
 console.error = console.log;
 
-
+console.log("Running V1.0.8 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 /* Retrieve arguments */
 let argv = require('yargs')
 	.usage('Usage: $0 -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]')
@@ -68,6 +68,7 @@ var currentWeb3 = null;
 var localProviderTimeOut = 300;
 var timeOutProvider = null;
 var missingBlockChunkSize = 100;
+var missingBlockTimer = null;
 
 var getter = new Getter(web3);
 SetupListener(web3, false);
@@ -132,18 +133,34 @@ function RPCsyscoinsetethheaders() {
 
 	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
         console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
+		timeSinceLastHeaders = new Date() / 1000;
 		SetupListener(web3_infura, true);
 		if (timeOutProvider != null) {
 			clearTimeout(timeOutProvider);
 			timeOutProvider = null;
 		}
+		// if Getter is stuck on await allow to startup another timer to request again
+		if(missingBlockTimer != null){
+			clearTimeout(missingBlockTimer);
+			setTimeout(retrieveBlock, 3000);
+		}
+		// clear fetching blocks so it will reset and allow to fetch it again
+		fetchingBlocks = [];
 	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > (localProviderTimeOut * 2)) {
         console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
+		timeSinceLastHeaders = new Date() / 1000;
 		SetupListener(web3, false);
 		if (timeOutProvider != null) {
 			clearTimeout(timeOutProvider);
 			timeOutProvider = null;
 		}
+		// if Getter is stuck on await allow to startup another timer to request again
+		if(missingBlockTimer != null){
+			clearTimeout(missingBlockTimer);
+			setTimeout(retrieveBlock, 3000);
+		}	
+		// clear fetching blocks so it will reset and allow to fetch it again
+		fetchingBlocks = [];
 	}
 
 
@@ -186,7 +203,7 @@ function RPCsyscoinsetethheaders() {
 	}
 };
 
-setTimeout(retrieveBlock, 3000);
+missingBlockTimer = setTimeout(retrieveBlock, 3000);
 async function retrieveBlock() {
     try {
 	    if(missingBlocks.length > 0){
@@ -208,13 +225,13 @@ async function retrieveBlock() {
     			collection.push(obj);
     		}
 
-    		setTimeout(retrieveBlock, 300);
+    		missingBlockTimer = setTimeout(retrieveBlock, 300);
     	}
         else {	
-    		setTimeout(retrieveBlock, 3000);
+    		missingBlockTimer = setTimeout(retrieveBlock, 3000);
         }
     } catch (e) {
-		setTimeout(retrieveBlock, 3000);
+		missingBlockTimer = setTimeout(retrieveBlock, 3000);
     }
 };
 
@@ -291,10 +308,7 @@ function RPCsyscoinsetethstatus(params) {
 				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
 				breakdownMissingBlocks(rawMissingBlocks);
 				missingBlocks = rawMissingBlocks;
-			    if (missingBlocks.length == 0) {
-			    	console.log("RPCsyscoinsetethstatus: There is no missing blocks");
-				}
-				else{
+			    if (missingBlocks.length > 0) {
 					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + missingBlocks.length);
 				}
             }
