@@ -221,7 +221,7 @@ async function retrieveBlock() {
     		}
     		for (var key in fetchedBlocks) {
     			var result = fetchedBlocks[key];
-    			var obj = [result.number,result.transactionsRoot,result.receiptsRoot];
+    			var obj = [result.number,result.hash,result.parentHash,result.transactionsRoot,result.receiptsRoot];
     			collection.push(obj);
     		}
 
@@ -329,7 +329,7 @@ function SetupSubscriber() {
 		if (currentBlock > highestBlock) {
 			highestBlock = currentBlock;
 		}
-		let obj = [blockHeader['number'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot']];
+		let obj = [blockHeader['number'],blockHeader['hash'],blockHeader['parentHash'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot']];
 		collection.push(obj);
 
 		// Check blockheight and timestamp to notify synced status
