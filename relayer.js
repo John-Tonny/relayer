@@ -74,9 +74,9 @@ var localProviderTimeOut = 300;
 var timeOutProvider = null;
 var missingBlockChunkSize = 100;
 var missingBlockTimer = null;
-
-var getter = new Getter(web3);
-SetupListener(web3, false);
+var firstTime = true;
+var getter = new Getter(web3_infura);
+SetupListener(web3_infura, true);
 // once a minute call eth status regardless of internal state
 setInterval(function () {
 	if(currentState !== "" || highestBlock != 0){
@@ -156,8 +156,9 @@ function RPCsyscoinsetethheaders() {
 		}
 		// clear fetching blocks so it will reset and allow to fetch it again
 		fetchingBlocks = [];
-	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > (localProviderTimeOut * 2)) {
-        console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
+	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > firstTime?  (localProviderTimeOut * 6): (localProviderTimeOut * 2)) {
+		firstTime = false;
+		console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
 		timeSinceLastHeaders = new Date() / 1000;
 		SetupListener(web3, false);
 		if (timeOutProvider != null) {
