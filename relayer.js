@@ -140,7 +140,10 @@ function RPCsyscoinsetethheaders() {
 	if(missingBlocks.length > 0){
 		timeOutToSwitchToInfura = 65; // 65 seconds to switch
 	}
-
+	var timeOutToSwitchAwayFromInfura = localProviderTimeOut * 2;
+	if(firstTime == true){
+		timeOutToSwitchAwayFromInfura = localProviderTimeOut * 6;
+	}
 	if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
         console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
 		timeSinceLastHeaders = new Date() / 1000;
@@ -156,7 +159,7 @@ function RPCsyscoinsetethheaders() {
 		}
 		// clear fetching blocks so it will reset and allow to fetch it again
 		fetchingBlocks = [];
-	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > firstTime?  (localProviderTimeOut * 6): (localProviderTimeOut * 2)) {
+	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > timeOutToSwitchAwayFromInfura) {
 		firstTime = false;
 		console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
 		timeSinceLastHeaders = new Date() / 1000;
