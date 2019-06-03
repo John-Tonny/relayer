@@ -11,7 +11,7 @@ const Getter = require('./getter.js');
  */
 /* Retrieve arguments */
 let argv = require('yargs')
-	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -infuraapi [apikey]')
+	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey]')
 	.default("sysrpcport", 8370)
 	.default("ethwsport", 8546)
 	.default("sysrpcuser", "u")
