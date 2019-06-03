@@ -36,7 +36,6 @@ class Getter {
 
 			var handler = function(err, block){
 				if (err) {
-			//		console.error(err, block);
 					resolve(null);
 				}
 				else {
@@ -53,8 +52,7 @@ class Getter {
 						let missing = self.listMissingBlocks(blockDict, startBlock, endBlock);
 
 						if(missing.length > 0){
-							console.error("Getter: Detected missing blocks: "+missing+" Re-requesting them!");
-							self.requestBlocks(missing, handler);
+							console.error("Getter: Detected missing blocks: "+missing);
 							return;
 						}
 
