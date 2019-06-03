@@ -64,6 +64,7 @@ var fetchingBlocks = [];
 /* Global Variables */
 var highestBlock = 0;
 var currentBlock = 0; 
+var currentState = "";
 var timediff = 0;
 var timeSinceLastHeaders = new Date() / 1000;
 var timeSinceInfura = 0;
@@ -76,7 +77,12 @@ var missingBlockTimer = null;
 
 var getter = new Getter(web3);
 SetupListener(web3, false);
-
+// once a minute call eth status regardless of internal state
+setInterval(function () {
+	if(currentState !== "" || highestBlock != 0){
+		RPCsyscoinsetethstatus([currentState, highestBlock]);
+	}
+}, 60000);
 function SetupListener(web3In, infura) {
 	var provider = null;
 	if (infura == true) {
@@ -202,7 +208,8 @@ function RPCsyscoinsetethheaders() {
 
 	if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
 		console.log("RPCsyscoinsetethheaders: Geth should be synced based on current block height and timestamp");
-		RPCsyscoinsetethstatus(["synced", currentBlock]);
+		highestBlock = currentBlock;
+		RPCsyscoinsetethstatus([currentState, currentBlock]);
 		timediff = 0;
 	}
 };
@@ -282,6 +289,7 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 	}
 }
 function RPCsyscoinsetethstatus(params) {
+	currentState = params[0];
 	let options = {
 		url: "http://localhost:" + sysrpcport,
 		method: "post",
