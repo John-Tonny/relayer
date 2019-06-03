@@ -49,7 +49,7 @@ console.error = console.log;
 console.log("Running V1.0.10 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
-var infura_ws_url = "wss://rinkeby.infura.io/ws/v3/" + infuraapikey;
+var infura_ws_url = "wss://mainnet.infura.io/ws/v3/" + infuraapikey;
 var geth_ws_url = "ws://127.0.0.1:" + ethwsport;
 var web3 = new Web3(geth_ws_url);
 var web3_infura = new Web3(infura_ws_url);
@@ -236,7 +236,7 @@ async function retrieveBlock() {
     			collection.push(obj);
     		}
 
-    		missingBlockTimer = setTimeout(retrieveBlock, 300);
+    		missingBlockTimer = setTimeout(retrieveBlock, 1000);
     	}
         else {	
     		missingBlockTimer = setTimeout(retrieveBlock, 3000);
