@@ -213,7 +213,7 @@ function RPCsyscoinsetethheaders() {
 	if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
 		console.log("RPCsyscoinsetethheaders: Geth should be synced based on current block height and timestamp");
 		highestBlock = currentBlock;
-		RPCsyscoinsetethstatus([currentState, currentBlock]);
+		RPCsyscoinsetethstatus(["synced", currentBlock]);
 		timediff = 0;
 	}
 };
@@ -293,7 +293,8 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 	}
 }
 function RPCsyscoinsetethstatus(params) {
-	currentState = params[0];
+	if(params.length > 0)
+		currentState = params[0];
 	let options = {
 		url: "http://localhost:" + sysrpcport,
 		method: "post",
