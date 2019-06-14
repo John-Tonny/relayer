@@ -25,4 +25,4 @@ This will produce portable binaries to be used in other systems.
 How to Use
 ----------
 
-`relayer -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port]`
+`relayer -sysrpcuser [username] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -gethtestnet [0/1]`

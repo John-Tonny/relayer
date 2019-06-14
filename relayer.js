@@ -11,13 +11,14 @@ const Getter = require('./getter.js');
  */
 /* Retrieve arguments */
 let argv = require('yargs')
-	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey]')
+	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey] -gethtestnet [0/1]')
 	.default("sysrpcport", 8370)
 	.default("ethwsport", 8546)
 	.default("sysrpcuser", "u")
 	.default("sysrpcpw", "p")
 	.default("datadir", "~/.syscoin")
 	.default("infurakey", "b3d07005e22f4127ba935ce09b9a2a8d")
+	.default("gethtestnet", "0")
 	.argv
 ;
 if (argv.sysrpcport < 0 || argv.sysrpcport > 65535) {
@@ -34,7 +35,7 @@ const sysrpcuser = argv.sysrpcuser;
 const sysrpcpw = argv.sysrpcpw;
 const datadir = argv.datadir;
 const infuraapikey = argv.infurakey;
-
+const gethtestnet = argv.gethtestnet == "1";
 /* Set up logging */
 var logFile = fs.createWriteStream(datadir + '/syscoin-relayer.log', { flags: 'a' });
 var logStdout = process.stdout;
@@ -46,10 +47,10 @@ console.log = function () {
 }
 console.error = console.log;
 
-console.log("Running V1.0.10 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
+console.log("Running V1.0.14 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
-var infura_ws_url = "wss://mainnet.infura.io/ws/v3/" + infuraapikey;
+var infura_ws_url = "wss://" + gethtestnet?"rinkeby":"mainnet" + ".infura.io/ws/v3/" + infuraapikey;
 var geth_ws_url = "ws://127.0.0.1:" + ethwsport;
 var web3 = new Web3(geth_ws_url);
 var web3_infura = new Web3(infura_ws_url);
