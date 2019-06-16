@@ -11,11 +11,10 @@ const Getter = require('./getter.js');
  */
 /* Retrieve arguments */
 let argv = require('yargs')
-	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcpw [password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey] -gethtestnet [0/1]')
+	.usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcusercolonpass [user:password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey] -gethtestnet [0/1]')
 	.default("sysrpcport", 8370)
 	.default("ethwsport", 8546)
-	.default("sysrpcuser", "u")
-	.default("sysrpcpw", "p")
+	.default("sysrpcusercolonpass", "u:p")
 	.default("datadir", "~/.syscoin")
 	.default("infurakey", "b3d07005e22f4127ba935ce09b9a2a8d")
 	.default("gethtestnet", "0")
@@ -31,8 +30,7 @@ if (argv.ethwsport < 0 || argv.ethwsport > 65535) {
 }
 const sysrpcport = argv.sysrpcport;
 const ethwsport = argv.ethwsport;
-const sysrpcuser = argv.sysrpcuser;
-const sysrpcpw = argv.sysrpcpw;
+const sysrpcuserpass = argv.sysrpcusercolonpass.split(":");
 const datadir = argv.datadir;
 const infuraapikey = argv.infurakey;
 const gethtestnet = argv.gethtestnet == "1";
@@ -193,11 +191,11 @@ function RPCsyscoinsetethheaders() {
 		method: "post",
 		headers:
 		{
-			"content-type": "text/plain"
+			"content-type": "text/plain" 	
 		},
 		auth: {
-			user: sysrpcuser,
-			pass: sysrpcpw 
+			user: sysrpcuserpass[0],
+			pass: sysrpcuserpass[1] 
 		},
 		body: JSON.stringify( {"jsonrpc": "1.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
 	};
@@ -304,8 +302,8 @@ function RPCsyscoinsetethstatus(params) {
 			"content-type": "text/plain"
 		},
 		auth: {
-			user: sysrpcuser,
-			pass: sysrpcpw 
+			user: sysrpcuserpass[0],
+			pass: sysrpcuserpass[1] 
 		},
 		body: JSON.stringify( {
 			"jsonrpc": "1.0", 
