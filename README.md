@@ -22,6 +22,31 @@ How to Build
 
 This will produce portable binaries to be used in other systems.
 
+The expected output is
+```
+> Targets not specified. Assuming:
+  node9-linux-x64, node9-macos-x64, node9-win-x64
+> Warning Cannot include addon %1 into executable.
+  The addon must be distributed with executable as %2.
+  /home/syscoin/relayer/node_modules/sha3/build/Release/sha3.node
+  path-to-executable/sha3.node
+> Warning Cannot include addon %1 into executable.
+  The addon must be distributed with executable as %2.
+  /home/syscoin/relayer/node_modules/scrypt/build/Release/scrypt.node
+  path-to-executable/scrypt.node
+> Warning Cannot include addon %1 into executable.
+  The addon must be distributed with executable as %2.
+  /home/syscoin/relayer/node_modules/web3-providers-ws/node_modules/websocket/build/Release/bufferutil.node
+  path-to-executable/bufferutil.node
+> Warning Cannot include addon %1 into executable.
+  The addon must be distributed with executable as %2.
+  /home/syscoin/relayer/node_modules/web3-providers-ws/node_modules/websocket/build/Release/validation.node
+  path-to-executable/validation.node
+```
+
+The 4 .node files (sha3.node, scrypt.node, bufferutil.node and validation.node) need to be placed beside the final relayer binary for it to work. 
+
+
 How to Use
 ----------
 
