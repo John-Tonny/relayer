@@ -8,6 +8,8 @@ via web3.js.  Then it pushes the data to syscoin via RPC through
 Requirement
 -----------
 This repository currently requires node v9.5.0 and pkg@4.3.1
+Branch web3-2.0 will start to use node v12.7.0 and pkg@4.4.0
+Please make sure you delete the node_modules folder and package-lock.json when switching between these 2 branches
 
 
 How to Build
