@@ -45,7 +45,7 @@ console.log = function () {
 }
 console.error = console.log;
 
-console.log("Running V1.0.15 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
+console.log("Running V1.0.17 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
 var infura_ws_url = "wss://" + (gethtestnet?"rinkeby":"mainnet") + ".infura.io/ws/v3/" + infuraapikey;

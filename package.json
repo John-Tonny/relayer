@@ -12,8 +12,8 @@
   "author": "Blockchain Foundry Inc.",
   "license": "ISC",
   "dependencies": {
-    "pkg": "^4.3.1",
-    "web3": "1.0.0-beta.37",
+    "pkg": "^4.4.0",
+    "web3": "2.0.0-alpha",
     "yargs": "^12.0.5"
   }
 }
