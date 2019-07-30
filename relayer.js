@@ -45,7 +45,7 @@ console.log = function () {
 }
 console.error = console.log;
 
-console.log("Running V1.0.15 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
+console.log("Running V1.0.16 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
 var infura_ws_url = "wss://" + (gethtestnet?"rinkeby":"mainnet") + ".infura.io/ws/v3/" + infuraapikey;
@@ -235,7 +235,7 @@ async function retrieveBlock() {
     		}
     		for (var key in fetchedBlocks) {
     			var result = fetchedBlocks[key];
-    			var obj = [result.number,result.hash,result.parentHash,result.transactionsRoot,result.receiptsRoot];
+    			var obj = [result.number,result.hash,result.parentHash,result.transactionsRoot,result.receiptsRoot,result.timestamp];
     			collection.push(obj);
     		}
 
@@ -345,7 +345,7 @@ function SetupSubscriber() {
 		if (currentBlock > highestBlock) {
 			highestBlock = currentBlock;
 		}
-		let obj = [blockHeader['number'],blockHeader['hash'],blockHeader['parentHash'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot']];
+		let obj = [blockHeader['number'],blockHeader['hash'],blockHeader['parentHash'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot'],blockHeader['timestamp']];
 		collection.push(obj);
 
 		// Check blockheight and timestamp to notify synced status
