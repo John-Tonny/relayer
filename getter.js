@@ -1,6 +1,6 @@
 
 "use strict"
-const maxAsyncRequests = 8;
+const maxAsyncRequests = 197;
 
 class Getter {
 	constructor(web3) {
@@ -90,17 +90,21 @@ class Getter {
 	}
 
 	//requests a given block range in the interval [start, end] (inclusive of end)
-	requestBlockRange(start, end, handler){
+	async requestBlockRange(start, end, handler){
+		const batch = new this.web3.BatchRequest();
 		for(let i=start; i<=end; i++) {
-			this.requestBlock(i, handler);
+			batch.add(this.requestBlock(i, handler));
 		}
+		await batch.execute();
 	}
 
 	//requests blocks from given array of block numbers
-	requestBlocks(blocks, handler){
+	async requestBlocks(blocks, handler){
+		const batch = new this.web3.BatchRequest();
 		for(let i=0; i<blocks.length; i++) {
-			this.requestBlock(blocks[i], handler);
+			batch.add(this.requestBlock(blocks[i], handler));
 		}
+		await batch.execute();
 	}
 
 	//requests a block and calls the given handler with the result
