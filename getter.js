@@ -89,7 +89,7 @@ class Getter {
 
 	//requests a block and calls the given handler with the result
 	requestBlock(blockN, handler, includeTXs=false){
-		this.web3.eth.getBlock.request(blockN, includeTXs, handler);
+		return this.web3.eth.getBlock.request(blockN, includeTXs, handler);
 	}
 
 
