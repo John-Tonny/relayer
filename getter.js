@@ -49,13 +49,6 @@ class Getter {
 					receivedBlocks++;
 
 					if(receivedBlocks >= expectedBlocks){
-						let missing = self.listMissingBlocks(blockDict, startBlock, endBlock);
-
-						if(missing.length > 0){
-							console.error("Getter: Detected missing blocks: "+missing);
-							return;
-						}
-
 						console.log("Getter: Received all blocks...");
 						resolve(blockDict);
 					} else if(requestedBlocks < expectedBlocks){
@@ -74,19 +67,6 @@ class Getter {
 
 			self.requestBlockRange(startBlock, end, handler);
 		});
-	}
-
-	//iterates the dict with keys from first to first+len and returns an array of missing keys
-	listMissingBlocks(dict, first, last){
-		let missing = [];
-
-		for(let bl = first; bl <= last; bl++){
-			if(dict[bl] == null){
-				missing.push(bl);
-			}
-		}
-
-		return missing;
 	}
 
 	//requests a given block range in the interval [start, end] (inclusive of end)
@@ -109,7 +89,7 @@ class Getter {
 
 	//requests a block and calls the given handler with the result
 	requestBlock(blockN, handler, includeTXs=false){
-		this.web3.eth.getBlock(blockN, includeTXs, handler);
+		this.web3.eth.getBlock.request(blockN, includeTXs, handler);
 	}
 
 

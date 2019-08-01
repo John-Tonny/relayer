@@ -131,10 +131,6 @@ function RPCsyscoinsetethheaders() {
 	var nowTime = new Date() / 1000;
 	var timeOutToSwitchToInfura = localProviderTimeOut;
 	// if we are missing blocks we should set this timeout to something small as we need those blocks ASAP
-	var remainingBlocks = getter.remainingBlockCount;
-	if (remainingBlocks > 0) {
-		console.log("RPCsyscoinsetethheadaers: Getter remaining blocks: " + remainingBlocks);
-	}
 
 	if(missingBlocks.length > 0){
 		timeOutToSwitchToInfura = 65; // 65 seconds to switch
@@ -239,7 +235,7 @@ async function retrieveBlock() {
     			collection.push(obj);
     		}
 
-    		missingBlockTimer = setTimeout(retrieveBlock, 1000);
+    		missingBlockTimer = setTimeout(retrieveBlock, 50);
     	}
         else {	
     		missingBlockTimer = setTimeout(retrieveBlock, 3000);
