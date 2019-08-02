@@ -58,7 +58,7 @@ var subscriptionHeader = null;
 /* Global Arrays */
 var collection = [];
 var missingBlocks = [];
-var fetchingBlocks = [];
+var fetchingBlock;
 
 /* Global Variables */
 var highestBlock = 0;
@@ -71,7 +71,7 @@ var isListenerInfura = false;
 var currentWeb3 = null;
 var localProviderTimeOut = 300;
 var timeOutProvider = null;
-var missingBlockChunkSize = 197;
+var missingBlockChunkSize = 300;
 var missingBlockTimer = null;
 var firstTime = true;
 var getter = new Getter(web3_infura);
@@ -150,10 +150,12 @@ function RPCsyscoinsetethheaders() {
 		// if Getter is stuck on await allow to startup another timer to request again
 		if(missingBlockTimer != null){
 			clearTimeout(missingBlockTimer);
-			setTimeout(retrieveBlock, 3000);
+			missingBlockTimer = setTimeout(retrieveBlock, 3000);
 		}
 		// clear fetching blocks so it will reset and allow to fetch it again
-		fetchingBlocks = [];
+		fetchingBlock.from = -1;
+		fetchingBlock.to = -1;
+
 	} else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > timeOutToSwitchAwayFromInfura) {
 		firstTime = false;
 		console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
@@ -166,10 +168,11 @@ function RPCsyscoinsetethheaders() {
 		// if Getter is stuck on await allow to startup another timer to request again
 		if(missingBlockTimer != null){
 			clearTimeout(missingBlockTimer);
-			setTimeout(retrieveBlock, 3000);
+			missingBlockTimer = setTimeout(retrieveBlock, 3000);
 		}	
 		// clear fetching blocks so it will reset and allow to fetch it again
-		fetchingBlocks = [];
+		fetchingBlock.from = -1;
+		fetchingBlock.to = -1;
 	}
 
 
@@ -217,17 +220,19 @@ missingBlockTimer = setTimeout(retrieveBlock, 3000);
 async function retrieveBlock() {
     try {
 	    if(missingBlocks.length > 0){
-    		var lastItem = Object.assign({}, missingBlocks.shift());
-    		fetchingBlocks.push(lastItem);
-    		console.log("retrieveBlock: Fetching range " + JSON.stringify(lastItem));
-    		let fetchedBlocks = await getter.getAll(lastItem.from, lastItem.to);
-    		fetchingBlocks.pop();
+			fetchingBlock = getNextRangeToDownload();
+			if(fetchingBlock.from == 0 || fetchingBlock.to == 0){
+				console.log("retrieveBlock: Nothing to fetch!");
+				missingBlockTimer = setTimeout(retrieveBlock, 3000);
+				return;
+			}
+    		console.log("retrieveBlock: Fetching range " + JSON.stringify(fetchingBlock));
+    		let fetchedBlocks = await getter.getAll(fetchingBlock.from, fetchingBlock.to);
     		if(!fetchedBlocks || fetchedBlocks.length <= 0){
-    			missingBlocks.unshift(lastItem);
-    			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(lastItem) + " pushing back to missingBlocks...");
+    			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(fetchingBlock) + " pushing back to missingBlocks...");
     		}
     		else{
-    			console.log("retrieveBlock: Fetched range " + JSON.stringify(lastItem));
+    			console.log("retrieveBlock: Fetched range " + JSON.stringify(fetchingBlock));
     		}
     		for (var key in fetchedBlocks) {
     			var result = fetchedBlocks[key];
@@ -245,47 +250,37 @@ async function retrieveBlock() {
     }
 };
 
-function UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks){
-	var prevCount = rawMissingBlocks.length;
-	var removingIndexes = [];
-	for(var i =0;i<rawMissingBlocks.length;i++){
-		for(var j = 0;j<fetchingBlocks.length;j++){
-			if(rawMissingBlocks[i].from == fetchingBlocks[j].from && rawMissingBlocks[i].to == fetchingBlocks[j].to){
-				removingIndexes.push(i);
-			}
-		}
-	}
-	for(var i =0;i<removingIndexes.length;i++){
-		rawMissingBlocks.splice(removingIndexes[i], 1);
-	}
-	var postCount = rawMissingBlocks.length;
-	if(removingIndexes.length > 0){
-		console.log("UpdateMissingBlocksBasedOnFetchingBlocks: Removing missing block " + removingIndexes.length + " indexes because they are currently being fetched, had " + prevCount + " missing ranges and now have " + postCount + " missing ranges.");
-	}
-}
-function breakdownMissingBlocks(rawMissingBlocks) {
-	var tempBlocks = [];
+
+function getMissingBlockAmount(rawMissingBlocks) {
+	var amount = 0;
 	for(var i=0; i<rawMissingBlocks.length; i++) {
 		var from = rawMissingBlocks[i].from;
 	 	var to = rawMissingBlocks[i].to;		
 		var blockDiff = to - from;
-		if(blockDiff > missingBlockChunkSize) {
-			var modulus = blockDiff % missingBlockChunkSize;
-			var set = Math.floor(blockDiff/missingBlockChunkSize);
-			for (var j=0; j < set; j++) {
-				var obj = {"from": from + j*missingBlockChunkSize, "to": from + (j+1)*missingBlockChunkSize - 1};
-				tempBlocks.push(obj);
-			}	
-			
-			var lastFrom = from + set * missingBlockChunkSize;
-			var lastTo = lastFrom + modulus;
-			tempBlocks.push({"from": lastFrom, "to": lastTo});
-			rawMissingBlocks.splice(i,1);
+		amount += blockDiff;	
+	}
+	return amount;
+}
+function getNextRangeToDownload(){
+	var nextRange;
+	nextRange.from = 0;
+	nextRange.to = 0;
+	var range = [];
+	for(var i =0;i<missingBlocks.length;i++){
+		for(var j =missingBlocks[i].from;j<=missingBlocks[i].to;j++){
+			if(!(j >= fetchingBlock.from && j <= fetchingBlock.to)){
+				range.push(j);
+				if(range.length >= missingBlockChunkSize){
+					break;
+				}
+			}
 		}
 	}
-	for(var i = 0; i < tempBlocks.length;  i++) {
-		rawMissingBlocks.push(tempBlocks[i]);
+	if(range.length > 0){
+		nextRange.from = range[0];
+		nextRange.to = range[range.length-1];
 	}
+	return nextRange;
 }
 function RPCsyscoinsetethstatus(params) {
 	if(params.length > 0)
@@ -317,11 +312,9 @@ function RPCsyscoinsetethstatus(params) {
 			var parsedBody = JSON.parse(body);
             if (parsedBody != null) {
 				var rawMissingBlocks = parsedBody.result.missing_blocks;
-				breakdownMissingBlocks(rawMissingBlocks);
-				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
 				missingBlocks = rawMissingBlocks;
 			    if (missingBlocks.length > 0) {
-					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + missingBlocks.length);
+					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + getMissingBlockAmount(missingBlocks));
 				}
             }
 		}

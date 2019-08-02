@@ -1,6 +1,6 @@
 
 "use strict"
-const maxAsyncRequests = 197;
+const maxAsyncRequests = 300;
 
 class Getter {
 	constructor(web3) {
