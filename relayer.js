@@ -217,13 +217,13 @@ missingBlockTimer = setTimeout(retrieveBlock, 3000);
 async function retrieveBlock() {
     try {
 	    if(missingBlocks.length > 0){
-    		var lastItem = Object.assign({}, missingBlocks.pop());
+    		var lastItem = Object.assign({}, missingBlocks.shift());
     		fetchingBlocks.push(lastItem);
     		console.log("retrieveBlock: Fetching range " + JSON.stringify(lastItem));
     		let fetchedBlocks = await getter.getAll(lastItem.from, lastItem.to);
     		fetchingBlocks.pop();
     		if(!fetchedBlocks || fetchedBlocks.length <= 0){
-    			missingBlocks.push(lastItem);
+    			missingBlocks.unshift(lastItem);
     			console.log("retrieveBlock: Could not fetch range " + JSON.stringify(lastItem) + " pushing back to missingBlocks...");
     		}
     		else{
