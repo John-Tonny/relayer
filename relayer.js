@@ -283,7 +283,7 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 			rawMissingBlocks.splice(i,1);
 		}
 	}
-	for(var i = 0; i < tempBlocks.length - 1;  i++) {
+	for(var i = 0; i < tempBlocks.length;  i++) {
 		rawMissingBlocks.push(tempBlocks[i]);
 	}
 }
