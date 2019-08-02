@@ -283,8 +283,8 @@ function breakdownMissingBlocks(rawMissingBlocks) {
 			rawMissingBlocks.splice(i,1);
 		}
 	}
-	for(var i = tempBlocks.length - 1; i >= 0;  i--) {
-		rawMissingBlocks.unshift(tempBlocks[i]);
+	for(var i = 0; i < tempBlocks.length - 1;  i++) {
+		rawMissingBlocks.push(tempBlocks[i]);
 	}
 }
 function RPCsyscoinsetethstatus(params) {
@@ -317,8 +317,8 @@ function RPCsyscoinsetethstatus(params) {
 			var parsedBody = JSON.parse(body);
             if (parsedBody != null) {
 				var rawMissingBlocks = parsedBody.result.missing_blocks;
-				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
 				breakdownMissingBlocks(rawMissingBlocks);
+				UpdateMissingBlocksBasedOnFetchingBlocks(rawMissingBlocks);
 				missingBlocks = rawMissingBlocks;
 			    if (missingBlocks.length > 0) {
 					console.log("RPCsyscoinsetethstatus: missingBlocks count: " + missingBlocks.length);
