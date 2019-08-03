@@ -254,7 +254,6 @@ async function retrieveBlock() {
 
 
 function getMissingBlockAmount(rawMissingBlocks) {
-    console.log("getMissingBlockAmount:  starting..");
     var amount = 0;
     for(var i=0; i<rawMissingBlocks.length; i++) {
         var from = rawMissingBlocks[i].from;
@@ -265,7 +264,6 @@ function getMissingBlockAmount(rawMissingBlocks) {
     return amount;
 }
 function getNextRangeToDownload(){
-    console.log("getNextRangeToDownload: starting..." );
     var range = [];
     var breakout = false;
     for(var i =0;i<missingBlocks.length;i++){
@@ -282,7 +280,6 @@ function getNextRangeToDownload(){
             }
         }
     }
-    console.log("getNextRangeToDownload: range: " + range);
     return range;
 }
 async function RPCsyscoinsetethstatus(params) {
