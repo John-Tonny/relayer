@@ -1,6 +1,5 @@
 
 "use strict"
-const maxAsyncRequests = 300;
 
 class Getter {
 	constructor(web3) {
@@ -18,7 +17,7 @@ class Getter {
 		return true;
 	}
 
-	downloadBlocks(startBlock, endBlock){
+	downloadBlocks(blocks){
 		if(!this.assertConnected())
 			return;
 		var self = this;
@@ -28,10 +27,10 @@ class Getter {
 
 			var requestedBlocks = 0; //the amount of blocks we have requested to receive
 			var receivedBlocks = 0; //how many blocks have been successfully received
-			var expectedBlocks = endBlock - startBlock + 1;
+			var expectedBlocks = blocks.length;
 			var lastRequestedBlock = 0;
 		
-			console.log("Getter: Downloading blocks from "+startBlock+" to "+endBlock);
+			console.log("Getter: Downloading " + blocks.length + " blocks starting from block " + blocks[0]);
 
 
 			var handler = function(err, block){
@@ -48,34 +47,16 @@ class Getter {
 
 					receivedBlocks++;
 
+
 					if(receivedBlocks >= expectedBlocks){
 						console.log("Getter: Received all blocks...");
 						resolve(blockDict);
-					} else if(requestedBlocks < expectedBlocks){
-						//get the next block
-						lastRequestedBlock++;
-						requestedBlocks++;
-						self.requestBlock(lastRequestedBlock, handler);
 					}
 				}
 			}
 
-			let end = Math.min(startBlock + maxAsyncRequests - 1, endBlock);
-			
-			lastRequestedBlock = end;
-			requestedBlocks = Math.abs(end - startBlock) + 1;
-
-			self.requestBlockRange(startBlock, end, handler);
+			self.requestBlocks(blocks, handler);
 		});
-	}
-
-	//requests a given block range in the interval [start, end] (inclusive of end)
-	async requestBlockRange(start, end, handler){
-		const batch = new this.web3.BatchRequest();
-		for(let i=start; i<=end; i++) {
-			batch.add(this.requestBlock(i, handler));
-		}
-		await batch.execute();
 	}
 
 	//requests blocks from given array of block numbers
@@ -93,10 +74,10 @@ class Getter {
 	}
 
 
-	async getAll(start, end) {
+	async getAll(blocks) {
 		if(!this.assertConnected())
 			return;
-		return this.downloadBlocks(start, end);
+		return this.downloadBlocks(blocks);
 	}
 }
 
