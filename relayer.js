@@ -198,9 +198,7 @@ async function RPCsyscoinsetethheaders() {
         body: JSON.stringify( {"jsonrpc": "1.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
     };
 
-    console.log("RPCCsyscoinsetethheaders: before request");
     return request(options, async (error, response, body) => {
-        console.log("RPCsyscoinsetethheaders: response");
         if (error) {
             console.error('RPCsyscoinsetethheaders: An error has occurred during request: ', error);
         } else {
