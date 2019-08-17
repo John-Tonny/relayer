@@ -5,35 +5,38 @@ const request = require('request');
 const fs = require('fs');
 const util = require('util');
 const Getter = require('./getter.js');
+const ethcoin = require('node-eth-rpc');
 /* 
  *  Usage:  Subscribe to Geth node and push header to syscoin via RPC 
  *
  */
 /* Retrieve arguments */
 let argv = require('yargs')
-    .usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcusercolonpass [user:password] -sysrpcport [port] -ethwsport [port] -infurakey [apikey] -gethtestnet [0/1]')
+    .usage('Usage: $0 -sysrpcuser [username] -datadir [syscoin data dir] -sysrpcusercolonpass [user:password] -sysrpcport [port] -ethwsport [port] -ethrpcport [port]')
     .default("sysrpcport", 8370)
-    .default("ethwsport", 8546)
+    .default("ethwsport", 8646)
+    .default("ethrpcport", 8645)
     .default("sysrpcusercolonpass", "u:p")
-    .default("datadir", "~/.syscoin")
-    .default("infurakey", "b3d07005e22f4127ba935ce09b9a2a8d")
-    .default("gethtestnet", "0")
+    .default("datadir", "~/.syscoin/geth")
     .argv
 ;
 if (argv.sysrpcport < 0 || argv.sysrpcport > 65535) {
     console.log('Invalid Syscoin RPC port');
     exit();
 }
-if (argv.ethwsport < 0 || argv.ethwsport > 65535) {
+if (argv.ethwsport < 0 || argv.ethwsport > 65535) {aq
+    console.log('Invalid Geth Websocket port');
+    exit();
+}
+if (argv.ethrpcport < 0 || argv.ethrpcport > 65535) {
     console.log('Invalid Geth RPC port');
     exit();
 }
 const sysrpcport = argv.sysrpcport;
 const ethwsport = argv.ethwsport;
+const ethrpcport = argv.ethrpcport;
 const sysrpcuserpass = argv.sysrpcusercolonpass.split(":");
 const datadir = argv.datadir;
-const infuraapikey = argv.infurakey;
-const gethtestnet = argv.gethtestnet == "1";
 /* Set up logging */
 var logFile = fs.createWriteStream(datadir + '/syscoin-relayer.log', { flags: 'a' });
 var logStdout = process.stdout;
@@ -45,13 +48,11 @@ console.log = function () {
 }
 console.error = console.log;
 
-console.log("Running V1.0.17 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
+console.log("Running V1.0.18 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
-var infura_ws_url = "wss://" + (gethtestnet?"rinkeby":"mainnet") + ".infura.io/ws/v3/" + infuraapikey;
 var geth_ws_url = "ws://127.0.0.1:" + ethwsport;
 var web3 = new Web3(geth_ws_url);
-var web3_infura = new Web3(infura_ws_url);
 var subscriptionSync = null;
 var subscriptionHeader = null;
 
@@ -65,17 +66,17 @@ var highestBlock = 0;
 var currentBlock = 0; 
 var currentState = "";
 var timediff = 0;
-var timeSinceLastHeaders = new Date() / 1000;
-var timeSinceInfura = 0;
-var isListenerInfura = false;
 var currentWeb3 = null;
-var localProviderTimeOut = 300;
 var timeOutProvider = null;
-var missingBlockChunkSize = 100;
-var missingBlockTimer = null;
-var firstTime = true;
-var getter = new Getter(web3_infura);
-SetupListener(web3_infura, true);
+var missingBlockChunkSize = 2000;
+var client = new ethcoin.Client({
+    host: 'localhost',
+    port: ethrpcport,
+    user: '',
+    pass: ''
+  });
+var getter = new Getter(client);
+SetupListener(web3);
 // once a minute call eth status regardless of internal state
 setInterval(RPCsetethstatus, 60000);
 async function RPCsetethstatus () {
@@ -83,13 +84,9 @@ async function RPCsetethstatus () {
         await RPCsyscoinsetethstatus([currentState, highestBlock]);
     }
 }
-function SetupListener(web3In, infura) {
-    var provider = null;
-    if (infura == true) {
-        provider = new Web3.providers.WebsocketProvider(infura_ws_url);
-    } else {
-        provider = new Web3.providers.WebsocketProvider(geth_ws_url);
-    }
+function SetupListener(web3In) {
+    var provider = new Web3.providers.WebsocketProvider(geth_ws_url);
+    
 
     provider.on("error", err => {
         console.log("SetupListener: web3 socket error\n")
@@ -99,7 +96,7 @@ function SetupListener(web3In, infura) {
         // Attempt to try to reconnect every 3 seconds
         console.log("SetupListener: web3 socket ended.  Retrying...\n");
         timeOutProvider = setTimeout(function () {
-            SetupListener(web3In, infura);
+            SetupListener(web3In);
         }, 3000);
     });
 
@@ -109,72 +106,19 @@ function SetupListener(web3In, infura) {
     });
     cancelSubscriptions();
     currentWeb3 = web3In;
-    // change web3 provider on Getter so if it is stuck getting range of blocks it can switch to try to get out and also
-    // for subsequent gets it should use this new web3 provider
-    getter.setWeb3(currentWeb3);
-    isListenerInfura = infura;
     if (timeOutProvider != null) {
         clearTimeout(timeOutProvider);
         timeOutProvider = null;
     }
-    if (isListenerInfura) {
-        console.log("SetupListener: Currently using Infura");
-        timeSinceInfura = new Date() / 1000;
-    } else {
-        console.log("SetupListener: Currently using local geth");
-    }
+
+    console.log("SetupListener: Currently using local geth");
+    
     web3In.setProvider(provider);
 }
 
 /* Timer for submitting header lists to Syscoin via RPC */
 setInterval(RPCsyscoinsetethheaders, 5000);
 async function RPCsyscoinsetethheaders() {
-    var nowTime = new Date() / 1000;
-    var timeOutToSwitchToInfura = localProviderTimeOut;
-    // if we are missing blocks we should set this timeout to something small as we need those blocks ASAP
-
-    if(missingBlocks.length > 0){
-        timeOutToSwitchToInfura = 65; // 65 seconds to switch
-    }
-    var timeOutToSwitchAwayFromInfura = localProviderTimeOut * 2;
-    if(firstTime == true){
-        timeOutToSwitchAwayFromInfura = localProviderTimeOut * 6;
-    }
-    if (isListenerInfura == false && timeSinceLastHeaders > 0 && (nowTime - timeSinceLastHeaders) > timeOutToSwitchToInfura) {
-        console.log("RPCsyscoinsetethheaders: Geth has not received headers for " + (nowTime - timeSinceLastHeaders) + "s.  Switching to use Infura");
-        timeSinceLastHeaders = new Date() / 1000;
-        SetupListener(web3_infura, true);
-        if (timeOutProvider != null) {
-            clearTimeout(timeOutProvider);
-            timeOutProvider = null;
-        }
-        // if Getter is stuck on await allow to startup another timer to request again
-        if(missingBlockTimer != null){
-            clearTimeout(missingBlockTimer);
-            missingBlockTimer = setTimeout(retrieveBlock, 3000);
-        }
-        // clear fetching blocks so it will reset and allow to fetch it again
-        fetchingBlock = [];
-
-    } else if (isListenerInfura == true && timeSinceInfura > 0 && (nowTime - timeSinceInfura) > timeOutToSwitchAwayFromInfura) {
-        firstTime = false;
-        console.log("RPCsyscoinsetethheaders: Infura has been running for over " + (nowTime - timeSinceInfura) + "s.  Switching back to local Geth");
-        timeSinceLastHeaders = new Date() / 1000;
-        SetupListener(web3, false);
-        if (timeOutProvider != null) {
-            clearTimeout(timeOutProvider);
-            timeOutProvider = null;
-        }
-        // if Getter is stuck on await allow to startup another timer to request again
-        if(missingBlockTimer != null){
-            clearTimeout(missingBlockTimer);
-            missingBlockTimer = setTimeout(retrieveBlock, 3000);
-        }	
-        // clear fetching blocks so it will reset and allow to fetch it again
-        fetchingBlock = [];
-    }
-
-
     // Check if there's anything in the collection
     if (collection.length == 0) {
         // console.log("collection is empty");
