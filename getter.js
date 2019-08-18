@@ -33,7 +33,6 @@ class Getter {
 
                     receivedBlocks++;
 
-
                     if(receivedBlocks >= expectedBlocks){
                         console.log("Getter: Received all blocks...");
                         resolve(blockDict);
@@ -51,7 +50,7 @@ class Getter {
         for(let i=0; i<blocks.length; i++) {
             batch.push({
                 method: 'eth_getHeaderByNumber',
-                params: [i]
+                params: ["0x" + blocks[i].toString(16)]
             });
         }
         await this.client.cmd(batch, handler);
