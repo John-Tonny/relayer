@@ -75,6 +75,8 @@ var client = new ethcoin.Client({
     user: '',
     pass: ''
   });
+var ethStatusBusy = false;
+var ethHeadersBusy = false;
 var getter = new Getter(client);
 SetupListener(web3);
 // once a minute call eth status regardless of internal state
@@ -140,7 +142,11 @@ async function RPCsyscoinsetethheaders() {
         // console.log("collection is empty");
         return;
     }
-
+    if(ethHeadersBusy){
+        console.log("RPCsyscoinsetethheaders: busy, skipping...");
+        return;
+    }
+    ethHeadersBusy = true;
     // Request options
     let options = {
         url: "http://localhost:" + sysrpcport,
@@ -163,6 +169,7 @@ async function RPCsyscoinsetethheaders() {
             console.log("RPCsyscoinsetethheaders: Successfully pushed " + collection.length + " headers to Syscoin Core");
             collection = [];
         }
+        ethHeadersBusy = false;
     });
 
 };
@@ -174,10 +181,10 @@ async function retrieveBlock() {
             let fetchingBlock = getNextRangeToDownload();
             if(fetchingBlock.length <= 0){
                 console.log("retrieveBlock: Nothing to fetch!");
-                missingBlockTimer = setTimeout(retrieveBlock, 3000);
                 missingBlocks = [];
                 fetchingBlocks = [];
                 await updateHeadersAndStatusManual();
+                missingBlockTimer = setTimeout(retrieveBlock, 3000);
                 return;
             }
             let fetchedBlocks = await getter.getAll(fetchingBlock);
@@ -234,6 +241,11 @@ function getNextRangeToDownload(){
     return range;
 }
 async function RPCsyscoinsetethstatus(params) {
+    if(ethStatusBusy){
+        console.log("RPCsyscoinsetethstatus: busy, skipping...");
+        return;
+    }
+    ethStatusBusy = true;
     let options = {
         url: "http://localhost:" + sysrpcport,
         method: "post",
@@ -270,6 +282,7 @@ async function RPCsyscoinsetethstatus(params) {
                 }
             }
         }
+        ethStatusBusy = false;
     });
 };
 
