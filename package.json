@@ -1,6 +1,6 @@
 {
   "name": "relayer",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "",
   "main": "relayer.js",
   "bin": {
@@ -14,7 +14,7 @@
   "dependencies": {
     "node-eth-rpc": "git+https://github.com/brunokenj/node-ethcoin.git",
     "pkg": "^4.3.1",
-    "web3": "1.0.0-beta.37",
+    "web3": "1.2.1",
     "yargs": "^12.0.5"
   }
 }

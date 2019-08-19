@@ -48,7 +48,7 @@ console.log = function () {
 }
 console.error = console.log;
 
-console.log("Running V1.0.18 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
+console.log("Running V1.0.19 version of the Syscoin relay logger! This tool pushed headers from Ethereum to Syscoin for consensus verification of SPV proofs of Syscoin Mint transactions.");
 
 /* Initialize Geth Web3 */
 var geth_ws_url = "ws://127.0.0.1:" + ethwsport;
@@ -193,7 +193,7 @@ async function retrieveBlock() {
 
             await updateHeadersAndStatusManual();
             
-            missingBlockTimer = setTimeout(retrieveBlock, 0);
+            missingBlockTimer = setTimeout(retrieveBlock, 50);
         }
         else {	
             missingBlockTimer = setTimeout(retrieveBlock, 3000);
