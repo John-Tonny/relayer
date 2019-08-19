@@ -23,7 +23,7 @@ class Getter {
             var handler = function(err, block){
                 if (err) {
                     self.busy = false;
-                    setTimeout(() => { resolve(null); });
+                    resolve(null);
                 }
                 else {
 
@@ -37,7 +37,7 @@ class Getter {
                     if(receivedBlocks >= expectedBlocks){
                         console.log("Getter: Received all blocks...");
                         self.busy = false;
-                        setTimeout(() => { resolve(blockDict); });
+                        resolve(blockDict);
                     }
                 }
             }
@@ -61,7 +61,7 @@ class Getter {
                 params: ["0x" + blocks[i].toString(16)]
             });
         }
-        setTimeout(() => { this.client.cmd(batch, handler); });
+        this.client.cmd(batch, handler);
     }
 
     async getAll(blocks) {
