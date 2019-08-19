@@ -124,7 +124,6 @@ async function updateHeadersAndStatus(){
     await RPCsyscoinsetethheaders();
     if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
         console.log("updateHeadersAndStatus: Geth should be synced based on current block height and timestamp");
-        currentState = "synced";
         highestBlock = currentBlock;
         await RPCsetethstatus();
         timediff = 0;
@@ -288,9 +287,11 @@ function SetupSubscriber() {
         }
         let obj = [blockHeader['number'],blockHeader['hash'],blockHeader['parentHash'],blockHeader['transactionsRoot'],blockHeader['receiptsRoot'],blockHeader['timestamp']];
         collection.push(obj);
-
         // Check blockheight and timestamp to notify synced status
         timediff = new Date() / 1000 - blockHeader['timestamp'];
+        if(timediff < 600){
+            currentState = "synced";
+        }
     });
 };
 
