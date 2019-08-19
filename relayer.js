@@ -64,7 +64,7 @@ var fetchingBlocks = [];
 /* Global Variables */
 var highestBlock = 0;
 var currentBlock = 0; 
-var currentState = "synced";
+var currentState = "syncing";
 var timediff = 0;
 var currentWeb3 = null;
 var timeOutProvider = null;
