@@ -176,7 +176,7 @@ async function retrieveBlock() {
                 console.log("retrieveBlock: Nothing to fetch!");
                 missingBlockTimer = setTimeout(retrieveBlock, 3000);
                 missingBlocks = [];
-                fetchedBlocks = [];
+                fetchingBlocks = [];
                 await updateHeadersAndStatusManual();
                 return;
             }
@@ -218,7 +218,7 @@ function getNextRangeToDownload(){
     var breakout = false;
     for(var i =0;i<missingBlocks.length;i++){
         if(breakout) { 
-            break; 
+            break;
         }
         for(var j =missingBlocks[i].from;j<=missingBlocks[i].to;j++){
             if(!fetchingBlocks.includes(j)){
@@ -263,6 +263,7 @@ async function RPCsyscoinsetethstatus(params) {
                 var rawMissingBlocks = parsedBody.result.missing_blocks;
                 if(missingBlocks.length <= 0){
                     missingBlocks = rawMissingBlocks;
+                    fetchingBlocks = [];
                     if (missingBlocks.length > 0) {
                         console.log("RPCsyscoinsetethstatus: missingBlocks count: " + getMissingBlockAmount(missingBlocks));
                     }
