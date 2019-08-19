@@ -4,7 +4,6 @@
 class Getter {
     constructor(client) {
         this.client = client;
-        this.busy = false;
     }
 
 
@@ -22,7 +21,6 @@ class Getter {
 
             var handler = function(err, block){
                 if (err) {
-                    self.busy = false;
                     resolve(null);
                 }
                 else {
@@ -34,26 +32,22 @@ class Getter {
                     }
 
                     receivedBlocks++;
+
                     if(receivedBlocks >= expectedBlocks){
                         console.log("Getter: Received all blocks...");
-                        self.busy = false;
                         resolve(blockDict);
                     }
                 }
             }
-            self.requestBlocks(self, blocks, handler);
+
+            self.requestBlocks(blocks, handler);
         }).catch(function(error) {
             console.log("Getter: error caught downloading blocks: " + error);
         });
     }
 
     //requests blocks from given array of block numbers
-    async requestBlocks(self, blocks, handler){
-        if(self.busy){
-            console.log("Getter: already fetching blocks, skipping...");
-            return;
-        }
-        self.busy = true;
+    async requestBlocks(blocks, handler){
         var batch = [];
         for(let i=0; i<blocks.length; i++) {
             batch.push({
