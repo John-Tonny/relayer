@@ -7,7 +7,7 @@ class Getter {
     }
 
 
-    downloadBlocks(blocks){
+    async downloadBlocks(blocks){
         var self = this;
 
         return new Promise(function(resolve, reject){
@@ -41,6 +41,8 @@ class Getter {
             }
 
             self.requestBlocks(blocks, handler);
+        }).catch(function(error) {
+            console.log("Getter: error caught downloading blocks: " + error);
         });
     }
 
