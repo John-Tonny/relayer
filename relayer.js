@@ -147,13 +147,13 @@ async function RPCsyscoinsetethheaders() {
         method: "post",
         headers:
         {
-            "content-type": "text/plain" 	
+            "content-type": "application/json" 	
         },
         auth: {
             user: sysrpcuserpass[0],
             pass: sysrpcuserpass[1] 
         },
-        body: JSON.stringify( {"jsonrpc": "1.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
+        body: JSON.stringify( {"jsonrpc": "2.0", "id": "ethheader_update", "method": "syscoinsetethheaders", "params": [collection]})
     };
 
     return request(options, async (error, response, body) => {
@@ -239,14 +239,14 @@ async function RPCsyscoinsetethstatus(params) {
         method: "post",
         headers:
         {
-            "content-type": "text/plain"
+            "content-type": "application/json"
         },
         auth: {
             user: sysrpcuserpass[0],
             pass: sysrpcuserpass[1] 
         },
         body: JSON.stringify( {
-            "jsonrpc": "1.0", 
+            "jsonrpc": "2.0", 
             "id": "eth_sync_update", 
             "method": "syscoinsetethstatus",
             "params": params})
