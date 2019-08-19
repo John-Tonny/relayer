@@ -64,7 +64,7 @@ var fetchingBlocks = [];
 /* Global Variables */
 var highestBlock = 0;
 var currentBlock = 0; 
-var currentState = "";
+var currentState = "synced";
 var timediff = 0;
 var currentWeb3 = null;
 var timeOutProvider = null;
@@ -124,6 +124,7 @@ async function updateHeadersAndStatus(){
     await RPCsyscoinsetethheaders();
     if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
         console.log("updateHeadersAndStatus: Geth should be synced based on current block height and timestamp");
+        currentState = "synced";
         highestBlock = currentBlock;
         await RPCsetethstatus();
         timediff = 0;
@@ -290,38 +291,6 @@ function SetupSubscriber() {
 
         // Check blockheight and timestamp to notify synced status
         timediff = new Date() / 1000 - blockHeader['timestamp'];
-    });
-
-
-    /*  Subscription for Geth syncing status */
-    console.log("SetupSubscriber: Subscribing to syncing");
-    subscriptionSync = currentWeb3.eth.subscribe('syncing', async function(error, sync){
-        if (error) return console.error("SetupSubscriber:" + error);
-
-        var params = [];
-        if (typeof(sync) == "boolean") {
-            if (sync) {
-                params = ["syncing", 0];
-            } else  {
-                // Syncing === false doesn't meant that it's done syncing.
-                // It simply means it's not syncing
-                if (currentBlock < highestBlock || highestBlock == 0) {
-                    // highestBlock == 0 should really mean it's waiting to connect to peer
-                    params = ["syncing", highestBlock];
-                } else {
-                    console.log("subscriptionSync: Geth is synced based on syncing subscription");
-                    params = ["synced", highestBlock];
-                }
-            }
-        } else {
-            if (highestBlock < sync.status.HighestBlock) {
-                highestBlock = sync.status.HighestBlock;
-            }
-            params = ["syncing", highestBlock];
-        }
-        if(params.length > 0)
-            currentState = params[0];
-        await RPCsyscoinsetethstatus(params);
     });
 };
 
