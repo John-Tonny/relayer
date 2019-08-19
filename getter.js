@@ -55,7 +55,7 @@ class Getter {
                 params: ["0x" + blocks[i].toString(16)]
             });
         }
-        await this.client.cmd(batch, handler);
+        this.client.cmd(batch, handler);
     }
 
     async getAll(blocks) {
