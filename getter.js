@@ -54,14 +54,7 @@ class Getter {
             return;
         }
         self.busy = true;
-        var batch = [];
-        for(let i=0; i<blocks.length; i++) {
-            batch.push({
-                method: 'eth_getHeaderByNumber',
-                params: ["0x" + blocks[i].toString(16)]
-            });
-        }
-        setTimeout(() => { this.client.cmd(batch, handler); });
+        setTimeout(() => { this.client.cmd('eth_getHeaderByNumber', "0x" + blocks[i].toString(16), handler); });
     }
 
     async getAll(blocks) {
