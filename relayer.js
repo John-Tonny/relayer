@@ -208,7 +208,7 @@ function getMissingBlockAmount(rawMissingBlocks) {
     for(var i=0; i<rawMissingBlocks.length; i++) {
         var from = rawMissingBlocks[i].from;
         var to = rawMissingBlocks[i].to;		
-        var blockDiff = to - from + 1;
+        var blockDiff = (to - from) + 1;
         amount += blockDiff;	
     }
     return amount;
