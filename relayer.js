@@ -174,10 +174,9 @@ async function retrieveBlock() {
             let fetchingBlock = getNextRangeToDownload();
             if(fetchingBlock.length <= 0){
                 console.log("retrieveBlock: Nothing to fetch!");
-                missingBlockTimer = setTimeout(retrieveBlock, 3000);
                 missingBlocks = [];
                 fetchingBlocks = [];
-                await updateHeadersAndStatusManual();
+                missingBlockTimer = setTimeout(retrieveBlock, 3000);
                 return;
             }
             let fetchedBlocks = await getter.getAll(fetchingBlock);
