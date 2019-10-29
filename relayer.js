@@ -38,7 +38,7 @@ const ethrpcport = argv.ethrpcport;
 const sysrpcuserpass = argv.sysrpcusercolonpass.split(":");
 const datadir = argv.datadir;
 if (!fs.existsSync(datadir)){
-    fs.mkdirSync(datadir);
+    fs.mkdirSync(datadir, { recursive: true });
 }
 /* Set up logging */
 var logFile = fs.createWriteStream(datadir + '/syscoin-relayer.log', { flags: 'a' });
