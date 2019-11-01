@@ -126,7 +126,6 @@ async function updateHeadersAndStatus(){
         return;
     await RPCsyscoinsetethheaders();
     if (highestBlock != 0 && currentBlock >= highestBlock && timediff < 600) {
-        console.log("updateHeadersAndStatus: Geth should be synced based on current block height and timestamp");
         highestBlock = currentBlock;
         await RPCsetethstatus();
         timediff = 0;
@@ -162,7 +161,7 @@ async function RPCsyscoinsetethheaders() {
     return request(options, async (error, response, body) => {
         if (error) {
             console.error('RPCsyscoinsetethheaders: An error has occurred during request: ', error);
-        } else {
+        } else if (collection.length > 1){
             console.log("RPCsyscoinsetethheaders: Successfully pushed " + collection.length + " headers to Syscoin Core");
             collection = [];
         }
@@ -254,12 +253,10 @@ async function RPCsyscoinsetethstatus(params) {
             "params": params})
     };
 
-    console.log("RPCsyscoinsetethstatus: Posting sync status: ", params);
     return request(options, async (error, response, body) => {
         if (error) {
             console.error('RPCsyscoinsetethstatus: An error has occurred during request: ', error);
         } else {
-            console.log('RPCsyscoinsetethstatus: Post successful; received missing blocks reply: ', body);
             var parsedBody = JSON.parse(body);
             if (parsedBody != null) {
                 var rawMissingBlocks = parsedBody.result.missing_blocks;
